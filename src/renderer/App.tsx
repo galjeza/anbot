@@ -5,7 +5,7 @@ import './App.css';
 function Hello() {
   return (
     <div>
-      <div className="Hello">
+      <div className="Hello test">
         <img width="200" alt="icon" src={icon} />
       </div>
       <h1>electron-react-boilerplate</h1>
