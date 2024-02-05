@@ -231,8 +231,7 @@
     "publish": {
       "provider": "github",
       "owner": "galjeza",
-      "repo": "anbot",
-      "private": true
+      "repo": "anbot"
     }
   },
   "collective": {
