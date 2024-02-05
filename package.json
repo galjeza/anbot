@@ -231,8 +231,7 @@
     "publish": {
       "provider": "github",
       "owner": "galjeza",
-      "repo": "anbot",
-      "token": "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"
+      "repo": "anbot"
     }
   },
   "collective": {
