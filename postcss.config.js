@@ -1,5 +1,6 @@
-// eslint-disable-next-line prettier/prettier
-/* eslint global-require: off */
+/* eslint-disable prettier/prettier */
+/* eslint global-require: off, import/no-extraneous-dependencies: off */
+
 module.exports = {
   plugins: [require('tailwindcss'), require('autoprefixer')],
 };
