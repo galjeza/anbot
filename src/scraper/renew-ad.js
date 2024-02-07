@@ -15,7 +15,7 @@ import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from './utils/constants.js';
 import { fileURLToPath } from 'url';
 
 const loginToAvtonet = async (browser, email, password) => {
-  const page = await browser.newPage();
+  const [page] = await browser.pages();
   await page.goto('https://www.avto.net/_2016mojavtonet/');
   await wait(5);
   await page.waitForSelector('input[name=enaslov]');
@@ -34,7 +34,7 @@ const loginToAvtonet = async (browser, email, password) => {
 
 const getCarData = async (browser, adId) => {
   const userDataPath = app.getPath('userData');
-  const page = await browser.newPage();
+  const [page] = await browser.pages();
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;
   console.log(`Navigating to ${editUrl}`);
   await page.goto(`${AVTONETEDITPREFIX}${adId}`);
@@ -97,61 +97,61 @@ const getCarData = async (browser, adId) => {
 const createNewAd = async (browser, carData) => {
   console.log('Creating new ad');
   console.log(carData);
-  const newAdPage = await browser.newPage();
+  const [page] = await browser.pages();
   // go to the new ad page
-  await newAdPage.goto(
+  await page.goto(
     'https://www.avto.net/_2016mojavtonet/ad_select_rubric_icons.asp?SID=10000',
   );
-  await newAdPage.waitForSelector('select[name=znamka]');
-  await newAdPage.select(
+  await page.waitForSelector('select[name=znamka]');
+  await page.select(
     'select[name=znamka]',
     carData.find((data) => data.name === 'znamka').value,
   );
 
   await randomWait(1, 2);
 
-  await newAdPage.select(
+  await page.select(
     'select[name=model]',
     carData.find((data) => data.name === 'model').value,
   );
 
   await randomWait(1, 2);
 
-  const selectElement = await newAdPage.$('select[name=oblika]');
+  const selectElement = await page.$('select[name=oblika]');
   const secondOptionValue = await selectElement.evaluate(
     (select) => select.options[1].value,
   );
-  await newAdPage.select('select[name=oblika]', secondOptionValue);
+  await page.select('select[name=oblika]', secondOptionValue);
 
   await randomWait(1, 2);
 
-  await newAdPage.select('select[name="mesec"]', '6');
+  await page.select('select[name="mesec"]', '6');
   try {
-    await newAdPage.select(
+    await page.select(
       'select[name="leto"]',
       carData.find((data) => data.name === 'letoReg').value,
     );
   } catch (e) {
     console.log(carData.find((data) => data.name === 'letoReg').value);
     console.log(e);
-    await newAdPage.select('select[name="leto"]', 'NOVO vozilo');
+    await page.select('select[name="leto"]', 'NOVO vozilo');
   }
   await wait(3);
 
-  const fuelElement = await newAdPage.click(
+  const fuelElement = await page.click(
     '#' + carData.find((data) => data.name === 'gorivo').value,
   );
 
   await wait(2);
 
-  await newAdPage.click('button[name="potrdi"]');
-  await newAdPage.waitForSelector('.supurl');
-  await newAdPage.click('.supurl');
-  await newAdPage.waitForSelector('input[name=znamka]');
+  await page.click('button[name="potrdi"]');
+  await page.waitForSelector('.supurl');
+  await page.click('.supurl');
+  await page.waitForSelector('input[name=znamka]');
 
   console.log(carData);
 
-  const checkboxes = await newAdPage.$$('input[type=checkbox]');
+  const checkboxes = await page.$$('input[type=checkbox]');
   for (const checkbox of checkboxes) {
     const name = await checkbox.evaluate((node) => node.name);
     const value = carData.find((data) => data.name === name).value;
@@ -160,7 +160,7 @@ const createNewAd = async (browser, carData) => {
     }
   }
 
-  const inputs = await newAdPage.$$('input[type=text]');
+  const inputs = await page.$$('input[type=text]');
   for (const input of inputs) {
     try {
       const name = await input.evaluate((node) => node.name);
@@ -174,7 +174,7 @@ const createNewAd = async (browser, carData) => {
     }
   }
 
-  const selects = await newAdPage.$$('select');
+  const selects = await page.$$('select');
   for (const select of selects) {
     try {
       const name = await select.evaluate((node) => node.name);
@@ -187,7 +187,7 @@ const createNewAd = async (browser, carData) => {
     }
   }
 
-  const textareas = await newAdPage.$$('textarea');
+  const textareas = await page.$$('textarea');
   for (const textarea of textareas) {
     try {
       const name = await textarea.evaluate((node) => node.name);
@@ -202,7 +202,7 @@ const createNewAd = async (browser, carData) => {
   }
 
   await wait(2);
-  await newAdPage.click('button[name="EDITAD"]');
+  await page.click('button[name="EDITAD"]');
 };
 const uploadImages = async (browser, carData) => {
   const userDataPath = app.getPath('userData'); // Get path to user data directory

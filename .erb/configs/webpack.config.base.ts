@@ -28,6 +28,10 @@ const configuration: webpack.Configuration = {
           },
         },
       },
+      {
+        test: /\.js$/,
+        loader: 'unlazy-loader',
+      },
     ],
   },
 
