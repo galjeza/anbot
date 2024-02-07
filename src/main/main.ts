@@ -39,7 +39,7 @@ async function handleRenewAd(event: any, adId: string) {
   console.log('handleRenewAd');
   const userData: any = store.get('userData');
 
-  await renewAd(adId, userData.email, userData.brokerPassword);
+  await renewAd(adId, userData.email, userData.password);
 
   return 'renewed';
 }

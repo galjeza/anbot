@@ -1,12 +1,12 @@
 import puppeteer from 'puppeteer-extra';
-//import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-//import UserAgentPlugin from 'puppeteer-extra-plugin-anonymize-ua';
-//import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
-//import blockResourcesPlugin from 'puppeteer-extra-plugin-block-resources';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import UserAgentPlugin from 'puppeteer-extra-plugin-anonymize-ua';
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
+import blockResourcesPlugin from 'puppeteer-extra-plugin-block-resources';
 
-//puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
-//puppeteer.use(UserAgentPlugin());
-//puppeteer.use(StealthPlugin());
+puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+puppeteer.use(UserAgentPlugin());
+puppeteer.use(StealthPlugin());
 
 export async function setupBrowser() {
   const browser = await puppeteer.launch({
