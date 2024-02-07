@@ -6,8 +6,6 @@ const AdList = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAds, setSelectedAds] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [isRenewing, setIsRenewing] = useState(false);
-  const [currentAd, setCurrentAd] = useState(null);
 
   const navigate = useNavigate();
 
@@ -60,14 +58,6 @@ const AdList = () => {
     );
   }
 
-  if (isRenewing) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        Renewing...
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-gray-900 text-white p-4 overflow-y-auto">
       <div className="flex justify-between items-center w-full max-w-6xl mb-4">
@@ -84,7 +74,7 @@ const AdList = () => {
             checked={selectAll}
             onChange={() => setSelectAll(!selectAll)}
           />
-          Select All
+          Izberi vse
         </label>
       </div>
       <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

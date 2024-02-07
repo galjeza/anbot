@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/solid';
 
 const Menu = () => {
+  const [loading, setLoading] = useState(false);
   // Initialize user state with null or default values
   const [user, setUser] = useState({
     email: '',
@@ -18,7 +19,6 @@ const Menu = () => {
   useEffect(() => {
     const fetchCredits = async (email) => {
       try {
-        // Replace 'https://your-api-endpoint/credits' with your actual API endpoint
         const response = await fetch(
           `https://avtonet-server.onrender.com/user?email=${encodeURIComponent(
             email,
@@ -33,6 +33,7 @@ const Menu = () => {
     };
 
     const fetchUserData = async () => {
+      setLoading(true);
       try {
         const userData = await window.electron.store.get('userData');
         console.log('Fetched user data:', userData);
@@ -57,10 +58,19 @@ const Menu = () => {
       } catch (error) {
         console.error('Failed to fetch user data from electron-store:', error);
       }
+      setLoading(false);
     };
 
     fetchUserData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-slate-600  text-white">
+        Nalagam...
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-gray-900">

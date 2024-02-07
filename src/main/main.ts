@@ -8,6 +8,7 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
+
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
@@ -16,6 +17,7 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import Store from 'electron-store';
 import { fetchActiveAds } from '../scraper/get-active-ads';
+import { renewAd } from '../scraper/renew-ad';
 
 class AppUpdater {
   constructor() {
@@ -31,6 +33,15 @@ async function handleGetAds() {
   console.log('userData in main.ts', userData);
   const ads = await fetchActiveAds(userData.brokerId);
   return ads;
+}
+
+async function handleRenewAd(event: any, adId: string) {
+  console.log('handleRenewAd');
+  const userData: any = store.get('userData');
+
+  await renewAd(adId, userData.email, userData.brokerPassword);
+
+  return 'renewed';
 }
 
 async function handleTest() {
@@ -54,12 +65,6 @@ ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
-});
-
-ipcMain.on('get-ads', async (event, arg) => {
-  const { brokerId } = arg;
-  const ads = await fetchActiveAds(brokerId);
-  event.reply('get-ads', ads);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -104,6 +109,7 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
+    autoHideMenuBar: true,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -129,9 +135,10 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
+  /*
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
-
+*/
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
@@ -159,6 +166,7 @@ app
   .whenReady()
   .then(() => {
     ipcMain.handle('get-ads', handleGetAds);
+    ipcMain.handle('renew-ad', handleRenewAd);
     ipcMain.handle('test', handleTest);
     createWindow();
     app.on('activate', () => {

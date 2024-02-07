@@ -24,6 +24,10 @@ const electronHandler = {
     getAds() {
       return ipcRenderer.invoke('get-ads');
     },
+
+    renewAd(adId: string) {
+      return ipcRenderer.invoke('renew-ad', adId);
+    },
   },
   store: {
     get(key: any) {
