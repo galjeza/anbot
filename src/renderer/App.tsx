@@ -1,21 +1,16 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-
-function Hello() {
-  return (
-    <div>
-      <h1 className="bg-gray-500 text-center text-white">
-        Hi Tailwind has been integrated.
-      </h1>
-    </div>
-  );
-}
+import Menu from './pages/Menu';
+import UpdateUser from './pages/UpdateUser';
+import AdList from './pages/Adlist';
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Hello />} />
+        <Route path="/" element={<Menu />} />
+        <Route path="/adlist" element={<AdList />} />
+        <Route path="/update" element={<UpdateUser />} />
       </Routes>
     </Router>
   );

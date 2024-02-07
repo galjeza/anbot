@@ -14,6 +14,8 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import Store from 'electron-store';
+import { fetchActiveAds } from '../scraper/get-active-ads';
 
 class AppUpdater {
   constructor() {
@@ -23,12 +25,41 @@ class AppUpdater {
   }
 }
 
+async function handleGetAds() {
+  console.log('handleGetAds');
+  const userData: any = store.get('userData');
+  console.log('userData in main.ts', userData);
+  const ads = await fetchActiveAds(userData.brokerId);
+  return ads;
+}
+
+async function handleTest() {
+  console.log('handleTest');
+  return 'test';
+}
+
 let mainWindow: BrowserWindow | null = null;
+
+const store = new Store();
+
+ipcMain.on('electron-store-get', (event, key) => {
+  event.returnValue = store.get(key);
+});
+
+ipcMain.on('electron-store-set', (event, key, val) => {
+  event.returnValue = store.set(key, val);
+});
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
   console.log(msgTemplate(arg));
   event.reply('ipc-example', msgTemplate('pong'));
+});
+
+ipcMain.on('get-ads', async (event, arg) => {
+  const { brokerId } = arg;
+  const ads = await fetchActiveAds(brokerId);
+  event.reply('get-ads', ads);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -85,6 +116,8 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
+  //mainWindow.maximize();
 
   autoUpdater.on('checking-for-update', () => {
     sendStatusToWindow('Checking for update...');
@@ -160,6 +193,8 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    ipcMain.handle('get-ads', handleGetAds);
+    ipcMain.handle('test', handleTest);
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the

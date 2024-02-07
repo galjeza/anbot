@@ -114,6 +114,7 @@ const configuration: webpack.Configuration = {
       },
     ],
   },
+
   plugins: [
     ...(skipDLLs
       ? []

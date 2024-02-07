@@ -21,9 +21,24 @@ const electronHandler = {
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
+    getAds() {
+      return ipcRenderer.invoke('get-ads');
+    },
+  },
+  store: {
+    get(key: any) {
+      return ipcRenderer.sendSync('electron-store-get', key);
+    },
+    set(property: any, val: any) {
+      ipcRenderer.send('electron-store-set', property, val);
+    },
   },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  test: () => ipcRenderer.invoke('test'),
+});
 
 export type ElectronHandler = typeof electronHandler;

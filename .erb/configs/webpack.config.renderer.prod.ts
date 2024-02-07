@@ -36,6 +36,8 @@ const configuration: webpack.Configuration = {
     },
   },
 
+  
+
   module: {
     rules: [
       {
