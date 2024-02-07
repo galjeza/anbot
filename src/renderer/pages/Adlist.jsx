@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AdList = () => {
   const [ads, setAds] = useState([]);
@@ -7,6 +8,8 @@ const AdList = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [isRenewing, setIsRenewing] = useState(false);
   const [currentAd, setCurrentAd] = useState(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getAds = async () => {
@@ -43,15 +46,16 @@ const AdList = () => {
   };
 
   const handleSubmit = () => {
-    // find the selected ads in the ads array
+    // Find the selected ads in the ads array
     const selected = ads.filter((ad) => selectedAds.has(ad.adId));
-    console.log('Selected ads:', selected);
+    // Navigate to the new route with selected ads as state
+    navigate('/obnavljanje', { state: { selected } });
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        Loading...
+      <div className="flex justify-center items-center min-h-screen bg-slate-600  text-white">
+        Nalagam oglase...
       </div>
     );
   }
@@ -71,7 +75,7 @@ const AdList = () => {
           onClick={handleSubmit}
           className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
         >
-          Submit
+          Obnovi izbrane oglase
         </button>
         <label className="flex items-center cursor-pointer text-sm">
           <input

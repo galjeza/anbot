@@ -18,7 +18,7 @@ const UpdateUser = () => {
       <form className="bg-gray-800 p-5 rounded-lg" onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-gray-200 mb-2" htmlFor="email">
-            New Email
+            Email
           </label>
           <input
             type="email"
@@ -31,7 +31,7 @@ const UpdateUser = () => {
         </div>
         <div className="mb-4">
           <label className="block text-gray-200 mb-2" htmlFor="password">
-            New Password
+            Geslo
           </label>
           <input
             type="password"
@@ -44,9 +44,17 @@ const UpdateUser = () => {
         </div>
         <button
           type="submit"
-          className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
+          className="py-2 px-4 mr-3 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
         >
-          Update
+          Posodobi
+        </button>
+        <button
+          className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
+          onClick={() => {
+            navigate('/');
+          }}
+        >
+          Prekliči
         </button>
       </form>
     </div>
