@@ -1,6 +1,6 @@
 {
   "name": "avtonetbot",
-  "version": "0.0.9",
+  "version": "0.0.12",
   "description": "Avtonetbot",
   "license": "MIT",
   "author": {
@@ -13,6 +13,8 @@
     "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
   },
   "dependencies": {
+    "puppeteer": "22.5.0",
+    "puppeteer-core": "22.5.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
     "puppeteer-extra-plugin-anonymize-ua": "^2.4.6",

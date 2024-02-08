@@ -70,8 +70,8 @@ const Menu = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-600  text-white">
-        Nalagam...
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-white">
+        <div className="spinner"></div>
       </div>
     );
   }
