@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+// TODO   make icons work
+/*
 import {
   MailIcon,
   KeyIcon,
@@ -7,6 +10,7 @@ import {
   LinkIcon,
 } from '@heroicons/react/solid';
 
+*/
 const Menu = () => {
   const [loading, setLoading] = useState(false);
   // Initialize user state with null or default values
@@ -77,21 +81,21 @@ const Menu = () => {
       <div className="max-w-sm w-full bg-gray-800 text-gray-200 shadow-md rounded-lg overflow-hidden">
         <div className="p-5">
           <div className="flex items-center mb-3">
-            <MailIcon className="h-6 w-6 text-gray-400 mr-2" />
+            {/* <MailIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
             <span>Email: {user.email}</span>
           </div>
           <div className="flex items-center mb-3">
-            <KeyIcon className="h-6 w-6 text-gray-400 mr-2" />
+            {/*<KeyIcon className="h-6 w-6 text-gray-400 mr-2" /> */}
             <span>Geslo: {user.password}</span>{' '}
             {/* Consider hashing or securing the password */}
           </div>
           <div className="flex items-center mb-3">
-            <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />
+            {/* <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
             <span>Krediti: {user.credits}</span>
           </div>
 
           <div className="flex items-center mb-3">
-            <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />
+            {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
             <span>Broker ID: {user.brokerId}</span>
           </div>
         </div>

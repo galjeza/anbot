@@ -1,9 +1,9 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
 import Menu from './pages/Menu';
 import UpdateUser from './pages/UpdateUser';
 import AdList from './pages/Adlist';
 import Obnavljanje from './pages/Obnavljanje';
+import 'tailwindcss/tailwind.css';
 
 export default function App() {
   return (
