@@ -210,6 +210,15 @@ const uploadImages = async (browser, carData) => {
     .pages()
     .then((pages) => pages[pages.length - 1]);
 
+  await imagesUploadPage.waitForSelector('.mojtrg');
+  await randomWait(2, 3);
+
+  const infoIcon = await imagesUploadPage.$('.fa.fa-info-circle.fa-lg');
+  if (infoIcon) {
+    await imagesUploadPage.click('.fa.fa-info-circle.fa-lg');
+    await wait(2);
+  }
+
   await imagesUploadPage.waitForSelector('.ButtonAddPhoto');
   await randomWait(2, 3);
   const numImages = carData.find((data) => data.name === 'images').value.length;
@@ -252,7 +261,7 @@ export const renewAd = async (adId, email, password) => {
   const carData = await getCarData(browser, adId);
   await createNewAd(browser, carData);
   await uploadImages(browser, carData);
-  //await deleteOldAd(browser, adId);
+  await deleteOldAd(browser, adId);
 
   await browser.close();
 };

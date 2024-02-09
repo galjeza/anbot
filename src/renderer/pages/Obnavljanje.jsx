@@ -3,15 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const Obnavljanje = () => {
   const location = useLocation();
-  const { selected } = location.state || { selected: [] };
+  const { selected, pause } = location.state || { selected: [] };
   const [currentAd, setCurrentAd] = useState(null);
   const [progress, setProgress] = useState(0);
   const [pauseTimer, setPauseTimer] = useState(0);
   const [isInPause, setIsInPause] = useState(false);
   const navigate = useNavigate();
-
-  // Configurable pause duration
-  const pauseDuration = 4; // Change this value to adjust the pause duration
 
   useEffect(() => {
     let timeoutId;
@@ -20,11 +17,11 @@ const Obnavljanje = () => {
         setCurrentAd(selected[i]);
         await window.electron.ipcRenderer.renewAd(selected[i].adId);
         setProgress((i + 1 / selected.length) * 100);
-        // Start the pause timer only if there are more ads to renew
+        const pauseInSeconds = parseInt(pause, 10) * 60;
         if (i < selected.length - 1) {
-          setPauseTimer(pauseDuration);
+          setPauseTimer(pauseInSeconds);
           setIsInPause(true);
-          for (let j = pauseDuration; j > 0; j--) {
+          for (let j = pauseInSeconds; j > 0; j--) {
             setPauseTimer(j);
             await new Promise(
               (resolve) => (timeoutId = setTimeout(resolve, 1000)),

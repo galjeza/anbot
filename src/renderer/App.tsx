@@ -3,8 +3,6 @@ import Menu from './pages/Menu';
 import UpdateUser from './pages/UpdateUser';
 import AdList from './pages/Adlist';
 import Obnavljanje from './pages/Obnavljanje';
-import 'tailwindcss/tailwind.css';
-import './App.css';
 export default function App() {
   return (
     <Router>

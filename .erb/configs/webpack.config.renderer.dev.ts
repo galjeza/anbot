@@ -62,7 +62,6 @@ const configuration: webpack.Configuration = {
 
   module: {
     rules: [
-      /*
       {
         test: /\.s?(c|a)ss$/,
         use: [
@@ -79,22 +78,9 @@ const configuration: webpack.Configuration = {
         ],
         include: /\.module\.s?(c|a)ss$/,
       },
-      */
-
       {
         test: /\.s?css$/,
-        use: [
-          'style-loader',
-          'css-loader',
-          {
-            loader: 'postcss-loader',
-            options: {
-              postcssOptions: {
-                plugins: [require('tailwindcss'), require('autoprefixer')],
-              },
-            },
-          },
-        ],
+        use: ['style-loader', 'css-loader', 'sass-loader'],
         exclude: /\.module\.s?(c|a)ss$/,
       },
       // Fonts
@@ -128,7 +114,6 @@ const configuration: webpack.Configuration = {
       },
     ],
   },
-
   plugins: [
     ...(skipDLLs
       ? []

@@ -6,7 +6,7 @@ const AdList = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAds, setSelectedAds] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
-
+  const [pause, setPause] = useState(60);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,15 +44,13 @@ const AdList = () => {
   };
 
   const handleSubmit = () => {
-    // Find the selected ads in the ads array
     const selected = ads.filter((ad) => selectedAds.has(ad.adId));
-    // Navigate to the new route with selected ads as state
-    navigate('/obnavljanje', { state: { selected } });
+    navigate('/obnavljanje', { state: { selected, pause } });
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-600  text-white">
+      <div className="flex justify-center items-center min-h-screen bg-slate-600 text-white">
         Nalagam oglase...
       </div>
     );
@@ -63,39 +61,53 @@ const AdList = () => {
       <div className="flex justify-between items-center w-full max-w-6xl mb-4">
         <button
           onClick={handleSubmit}
-          className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
+          className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-semibold rounded-lg shadow"
         >
           Obnovi izbrane oglase
         </button>
-        <label className="flex items-center cursor-pointer text-sm">
+        <label className="flex items-center cursor-pointer">
+          <span className="ml-2 text-sm ">Pavza med oglasi (min)</span>
+
+          <input
+            type="number"
+            value={pause}
+            className="form-checkbox h-5 w-10  rounded border-gray-300 focus:ring-blue-500 bg-gray-800 border-2 checked:bg-blue-500 checked:border-transparent"
+            onChange={(e) => setPause(e.target.value)}
+          />
+        </label>
+        <label className="flex items-center cursor-pointer">
           <input
             type="checkbox"
-            className="mr-2"
+            className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-gray-800 border-2 checked:bg-blue-500 checked:border-transparent"
             checked={selectAll}
             onChange={() => setSelectAll(!selectAll)}
           />
-          Izberi vse
+          <span className="ml-2 text-sm">Izberi vse</span>
         </label>
       </div>
       <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {ads.map((ad) => (
-          <div key={ad.adId} className="bg-gray-800 p-2 rounded-lg shadow-lg">
+          <div
+            key={ad.adId}
+            className="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center text-center"
+          >
             <img
               src={ad.photoUrl}
               alt={ad.name}
-              className="object-cover h-24 w-full rounded-md mb-2"
+              className="object-cover h-40 w-full rounded-md mb-4"
             />
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={selectedAds.has(ad.adId)}
-                onChange={() => handleAdSelection(ad.adId)}
-                className="mr-2"
-              />
-              <div>
-                <p className="font-bold text-sm">{ad.name}</p>
-                <p className="text-xs">{ad.price}</p>
-              </div>
+            <div className="flex justify-center items-center w-full">
+              <label className="flex items-center cursor-pointer">
+                <div className="ml-2 text-left">
+                  <p className="font-bold text-sm">{ad.name}</p>
+                  <input
+                    type="checkbox"
+                    checked={selectedAds.has(ad.adId)}
+                    onChange={() => handleAdSelection(ad.adId)}
+                    className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-gray-700 border-2 checked:bg-blue-500 checked:border-transparent"
+                  />
+                </div>
+              </label>
             </div>
           </div>
         ))}

@@ -17,11 +17,11 @@ const Menu = () => {
   const [user, setUser] = useState({
     email: '',
     password: '',
-    credits: 0,
+    subscriptionPaidTo: '',
     brokerId: '',
   });
   useEffect(() => {
-    const fetchCredits = async (email) => {
+    const fetchApiData = async (email) => {
       try {
         const response = await fetch(
           `https://avtonet-server.onrender.com/user?email=${encodeURIComponent(
@@ -43,17 +43,16 @@ const Menu = () => {
         console.log('Fetched user data:', userData);
         if (userData) {
           // Fetch credits using the email from the stored user data
-          const apiData = await fetchCredits(userData.email);
-          const credits = apiData.credits;
+          const apiData = await fetchApiData(userData.email);
+          const subscriptionPaidTo = apiData.subscriptionPaidTo;
           const brokerId = apiData.brokerId;
 
           console.log('apiData', apiData);
-          console.log('Fetched credits:', apiData.credits);
-          setUser({ ...userData, credits, brokerId }); // Update state with fetched credits
+          setUser({ ...userData, subscriptionPaidTo, brokerId }); // Update state with fetched credits
           window.electron.store.set('userData', {
             email: userData.email,
             password: userData.password,
-            credits,
+            subscriptionPaidTo,
             brokerId,
           }); // Update store with fetched credits
         } else {
@@ -71,10 +70,16 @@ const Menu = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-900 text-white">
-        <div className="spinner"></div>
+        <p>Nalagam...</p>
       </div>
     );
   }
+
+  const isSubscriptionActive = new Date(user.subscriptionPaidTo) > new Date();
+  const subdateDateString = new Date(user.subscriptionPaidTo).toLocaleString(
+    'sl-SI',
+    { month: 'long', day: 'numeric', year: 'numeric' },
+  );
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-gray-900">
@@ -91,7 +96,17 @@ const Menu = () => {
           </div>
           <div className="flex items-center mb-3">
             {/* <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span>Krediti: {user.credits}</span>
+            <span>
+              Status naročnine:
+              {isSubscriptionActive ? (
+                <span className="text-green-400">
+                  {' '}
+                  Aktivna do {subdateDateString}
+                </span>
+              ) : (
+                <span className="text-red-400">Ni aktivna</span>
+              )}
+            </span>
           </div>
 
           <div className="flex items-center mb-3">
