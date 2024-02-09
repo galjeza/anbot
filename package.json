@@ -103,6 +103,7 @@
     "electron-updater": "^6.1.4",
     "node-fetch": "^3.3.2",
     "path-browserify": "^1.0.1",
+    "puppeteer": "^22.0.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
     "puppeteer-extra-plugin-anonymize-ua": "^2.4.6",
@@ -187,7 +188,10 @@
     "productName": "Avtonetbot",
     "appId": "avtonetbot",
     "asar": true,
-    "asarUnpack": "**\\*.{node,dll}",
+    "asarUnpack": [
+      "**\\*.{node,dll}",
+      "node_modules/puppeteer/.local-chromium/**/*"
+    ],
     "files": [
       "dist",
       "node_modules",
@@ -239,7 +243,14 @@
       "output": "release/build"
     },
     "extraResources": [
-      "./assets/**"
+      "./assets/**",
+      {
+        "from": "./node_modules/puppeteer/.local-chromium/",
+        "to": "puppeteer/.local-chromium",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "publish": {
       "provider": "github",
