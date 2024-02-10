@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const UpdateUser = () => {
@@ -13,6 +13,16 @@ const UpdateUser = () => {
     window.electron.store.set('userData', { email, password, chromePath });
     navigate('/');
   };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userData = await window.electron.store.get('userData');
+      setEmail(userData.email);
+      setPassword(userData.password);
+      setChromePath(userData.chromePath);
+    };
+    fetchUserData();
+  }, []);
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-gray-900">
