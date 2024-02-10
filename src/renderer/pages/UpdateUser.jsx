@@ -1,15 +1,16 @@
-// UpdateUser.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const UpdateUser = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [chromePath, setChromePath] = useState(''); // State for Chrome path
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    window.electron.store.set('userData', { email, password });
+    // Save email, password, and Chrome path together
+    window.electron.store.set('userData', { email, password, chromePath });
     navigate('/');
   };
 
@@ -40,6 +41,19 @@ const UpdateUser = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-2 rounded-lg bg-gray-700 text-gray-300"
             required
+          />
+        </div>
+        {/* Chrome Path Field */}
+        <div className="mb-4">
+          <label className="block text-gray-200 mb-2" htmlFor="chromePath">
+            Chrome Path
+          </label>
+          <input
+            type="text"
+            id="chromePath"
+            value={chromePath}
+            onChange={(e) => setChromePath(e.target.value)}
+            className="w-full p-2 rounded-lg bg-gray-700 text-gray-300"
           />
         </div>
         <button

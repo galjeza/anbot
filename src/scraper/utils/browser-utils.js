@@ -4,13 +4,19 @@ import puppeteer from 'puppeteer-extra';
 puppeteer.use(UserAgentPlugin());
 puppeteer.use(StealthPlugin());
 
-function getChromiumExecPath() {
-  return puppeteer.executablePath().replace('app.asar', 'app.asar.unpacked');
+import Store from 'electron-store';
+
+async function getUsersChromePath() {
+  const store = new Store();
+  const chromePath = store.get('chromePath');
+  return chromePath;
 }
 
 export async function setupBrowser() {
+  const chromePath = await getUsersChromePath();
+  console.log('chromePath', chromePath);
   const browser = await puppeteer.launch({
-    executablePath: getChromiumExecPath(),
+    executablePath: chromePath,
     headless: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });

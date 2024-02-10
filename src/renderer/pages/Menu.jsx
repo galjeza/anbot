@@ -15,6 +15,7 @@ const Menu = () => {
   const [loading, setLoading] = useState(false);
   // Initialize user state with null or default values
   const [user, setUser] = useState({
+    chromePath: '',
     email: '',
     password: '',
     subscriptionPaidTo: '',
@@ -50,6 +51,7 @@ const Menu = () => {
           console.log('apiData', apiData);
           setUser({ ...userData, subscriptionPaidTo, brokerId }); // Update state with fetched credits
           window.electron.store.set('userData', {
+            chromePath: userData.chromePath,
             email: userData.email,
             password: userData.password,
             subscriptionPaidTo,
@@ -113,6 +115,10 @@ const Menu = () => {
             {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
             <span>Broker ID: {user.brokerId}</span>
           </div>
+          <div className="flex items-center mb-3">
+            {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
+            <span>Chrome path: {user.chromePath}</span>
+          </div>
         </div>
 
         <div className="bg-gray-700 p-4">
@@ -120,7 +126,7 @@ const Menu = () => {
             to="/update"
             className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
           >
-            Spremeni email in geslo
+            Konfiguracija
           </Link>
           <Link
             to="/adlist"
