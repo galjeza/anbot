@@ -111,7 +111,7 @@ const createNewAd = async (browser, carData) => {
   await randomWait(1, 2);
 
   // save cardata to json file
-  saveList(carData, 'carData.json');
+  //saveList(carData, 'carData.json');
 
   // check if select with name model has value of carModel
 
