@@ -128,12 +128,20 @@ const Menu = () => {
           >
             Konfiguracija
           </Link>
-          <Link
-            to="/adlist"
-            className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
-          >
-            Obnovi oglase
-          </Link>
+          {isSubscriptionActive ? (
+            <Link
+              to="/adlist"
+              className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
+            >
+              Obnovi oglase
+            </Link>
+          ) : (
+            <p>
+              <span className="text-red-400">
+                Obnova oglasov ni mogoča saj nimate aktivne naročnine
+              </span>
+            </p>
+          )}
         </div>
       </div>
     </div>

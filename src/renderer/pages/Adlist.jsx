@@ -66,7 +66,7 @@ const AdList = () => {
           Obnovi izbrane oglase
         </button>
         <label className="flex items-center cursor-pointer">
-          <span className="ml-2 text-sm ">Pavza med oglasi (min)</span>
+          <span className="ml-2 text-sm ">Pavza med oglasi (minute)</span>
 
           <input
             type="number"
@@ -85,7 +85,7 @@ const AdList = () => {
           <span className="ml-2 text-sm">Izberi vse</span>
         </label>
       </div>
-      <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
         {ads.map((ad) => (
           <div
             key={ad.adId}
@@ -94,7 +94,7 @@ const AdList = () => {
             <img
               src={ad.photoUrl}
               alt={ad.name}
-              className="object-cover h-40 w-full rounded-md mb-4"
+              className="object-cover h-30 w-full rounded-md mb-4"
             />
             <div className="flex justify-center items-center w-full">
               <label className="flex items-center cursor-pointer">

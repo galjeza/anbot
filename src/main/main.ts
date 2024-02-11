@@ -18,7 +18,6 @@ import { resolveHtmlPath } from './util';
 import Store from 'electron-store';
 import { fetchActiveAds } from '../scraper/get-active-ads';
 import { renewAd } from '../scraper/renew-ad';
-import { decreaseCredits } from './utils';
 
 class AppUpdater {
   constructor() {
@@ -41,8 +40,6 @@ async function handleRenewAd(event: any, adId: string) {
   const userData: any = store.get('userData');
 
   await renewAd(adId, userData.email, userData.password);
-  await decreaseCredits(userData.email);
-
   return 'renewed';
 }
 

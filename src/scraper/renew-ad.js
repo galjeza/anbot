@@ -110,12 +110,32 @@ const createNewAd = async (browser, carData) => {
 
   await randomWait(1, 2);
 
-  await page.select(
-    'select[name=model]',
-    carData.find((data) => data.name === 'model').value,
+  // save cardata to json file
+  saveList(carData, 'carData.json');
+
+  // check if select with name model has value of carModel
+
+  const modelOptionsValues = await page.$$eval(
+    'select[name=model] option',
+    (options) => options.map((option) => option.value),
   );
 
-  await randomWait(1, 2);
+  // check if they contain a value of carModel
+  const carModel = carData.find((data) => data.name === 'model').value;
+  console.log('carModel', carModel);
+
+  if (modelOptionsValues.includes(carModel)) {
+    await page.select('select[name=model]', carModel);
+    console.log('epic');
+  } else {
+    const weirdName = carData
+      .find((data) => data.name === 'model')
+      .value.replace(' ', '---');
+    console.log('weirdName', weirdName);
+    await page.select('select[name=model]', weirdName);
+  }
+
+  await randomWait(3, 4);
 
   const selectElement = await page.$('select[name=oblika]');
   const secondOptionValue = await selectElement.evaluate(
