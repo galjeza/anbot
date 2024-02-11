@@ -1,5 +1,6 @@
 import { setupBrowser } from './utils/browser-utils.js';
 import { AVTONET_BROKER_URL } from './utils/constants.js';
+import { saveList } from './utils/utils.js';
 
 export async function fetchActiveAds(brokerId) {
   const browser = await setupBrowser();
@@ -18,23 +19,8 @@ export async function fetchActiveAds(brokerId) {
         const tableRows = await adElement.$$('.GO-Results-Data-Top tr');
         const photoElement = await adElement.$('.GO-Results-Photo');
 
-        const [
-          name,
-          firstRegistrationYear,
-          mileage,
-          fuel,
-          transmission,
-          engine,
-          price,
-          photoUrl,
-          adUrl,
-        ] = await Promise.all([
+        const [name, price, photoUrl, adUrl] = await Promise.all([
           adElement.$eval('.GO-Results-Naziv', (el) => el.innerText.trim()),
-          tableRows[0].$eval('td:nth-child(2)', (el) => el.innerText.trim()),
-          tableRows[1].$eval('td:nth-child(2)', (el) => el.innerText.trim()),
-          tableRows[2].$eval('td:nth-child(2)', (el) => el.innerText.trim()),
-          tableRows[3].$eval('td:nth-child(2)', (el) => el.innerText.trim()),
-          tableRows[4].$eval('td:nth-child(2)', (el) => el.innerText.trim()),
           adElement.$eval('.GO-Results-Price-Mid', (el) => el.innerText.trim()),
           photoElement.$eval('img', (el) => el.getAttribute('src')),
           photoElement.$eval('a', (el) => el.getAttribute('href')),
@@ -45,11 +31,6 @@ export async function fetchActiveAds(brokerId) {
 
         adData.push({
           name,
-          firstRegistrationYear,
-          mileage,
-          fuel,
-          transmission,
-          engine,
           price,
           photoUrl,
           adUrl,
@@ -78,9 +59,10 @@ export async function fetchActiveAds(brokerId) {
         scrapePage = false;
       }
     }
-
+    console.log('Ad data:', adData);
     return adData;
   } catch (error) {
+    await saveList(error, 'error.json');
     console.error('Error occurred:', error);
     return [];
   } finally {

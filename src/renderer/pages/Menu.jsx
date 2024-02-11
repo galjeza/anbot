@@ -23,15 +23,19 @@ const Menu = () => {
   });
   useEffect(() => {
     const fetchApiData = async (email) => {
+      console.log('1');
       try {
+        console.log('2');
         const response = await fetch(
           `https://avtonet-server.onrender.com/user?email=${encodeURIComponent(
             email,
           )}`,
         );
+        console.log('3');
         const data = await response.json();
         return data;
       } catch (error) {
+        console.log('4');
         console.error('Failed to fetch credits:', error);
         return 0; // Return a default value or handle the error as needed
       }
