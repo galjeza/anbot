@@ -11,6 +11,8 @@ import {
   wait,
   randomWait,
 } from './utils/utils.js';
+
+import { fixGasType } from './utils/avtonetutils.js';
 import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from './utils/constants.js';
 import { fileURLToPath } from 'url';
 
@@ -158,8 +160,12 @@ const createNewAd = async (browser, carData) => {
   }
   await wait(3);
 
+  const gasType = carData.find((data) => data.name === 'gorivo').value;
+  const fixedGasType = fixGasType(gasType);
+  console.log('fixedGasType', fixedGasType);
+
   const fuelElement = await page.click(
-    '#' + carData.find((data) => data.name === 'gorivo').value,
+    '#' + fixedGasType.toLowerCase().replace(' ', '_'),
   );
 
   await wait(2);
