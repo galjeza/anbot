@@ -71,3 +71,18 @@ export async function randomWait(min, max) {
   const randomTime = Math.random() * (max - min) + min;
   return wait(randomTime);
 }
+
+const Jimp = require('jimp');
+
+export async function adjustImage(
+  imagePath,
+  blur = 3,
+  saturationScaleFactor = 0.1,
+) {
+  const image = await Jimp.read(imagePath);
+  image.gaussian(blurAmount); // Set blurAmount to the desired level
+  image.color([
+    { apply: 'saturate', params: [-saturationScaleFactor] }, // saturationScaleFactor should be negative
+  ]);
+  await image.writeAsync(imagePath + 'new');
+}
