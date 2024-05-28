@@ -20,6 +20,7 @@ const Menu = () => {
     password: '',
     subscriptionPaidTo: '',
     brokerId: '',
+    hdImages: false,
   });
   useEffect(() => {
     const fetchApiData = async (email) => {
@@ -60,6 +61,7 @@ const Menu = () => {
             password: userData.password,
             subscriptionPaidTo,
             brokerId,
+            hdImages: apiData.hdImages || false,
           }); // Update store with fetched credits
         } else {
           console.log('No user data found in the store, using default values.');
@@ -121,7 +123,7 @@ const Menu = () => {
           </div>
           <div className="flex items-center mb-3">
             {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span>Chrome path: {user.chromePath}</span>
+            <span> Hd slike: {user.hdImages ? 'Da' : 'Ne'}</span>
           </div>
         </div>
 

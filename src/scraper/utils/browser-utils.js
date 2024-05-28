@@ -18,11 +18,13 @@ export async function setupBrowser() {
   const browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: false,
+    timeout: 6000000,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--window-position=9999,9999',
     ],
+    protocolTimeout: 240000,
   });
 
   return browser;

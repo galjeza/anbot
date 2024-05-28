@@ -1,5 +1,7 @@
 import fs from 'fs';
 import axios from 'axios';
+import Jimp from 'jimp';
+import path from 'path';
 
 export async function saveList(list, filename) {
   await fs.writeFile(filename, JSON.stringify(list), (err) => {
@@ -9,7 +11,26 @@ export async function saveList(list, filename) {
   });
 }
 
-export function generateAdHash(adProperties) {
+// Example function to get the ad images directory path
+export function getAdImagesDirectory(carData, userDataPath) {
+  const newHash = generateAdHash(carData); // Generate hash without price
+  const oldHash = generateAdHashOld(carData); // Assume this function generates a hash with the price included, similar to your original function
+
+  // Construct directory paths for both old and new hashes
+  const newAdImagesDirectory = path.join(userDataPath, 'AdImages', newHash);
+  const oldAdImagesDirectory = path.join(userDataPath, 'AdImages', oldHash);
+
+  // Check if the directory with the old hash exists
+  if (fs.existsSync(oldAdImagesDirectory)) {
+    console.log('Old hash directory exists:', oldAdImagesDirectory);
+    return oldAdImagesDirectory;
+  }
+  // If not, use the new hash directory (this also covers the scenario of creating a new directory)
+  console.log('New hash directory exists:', newAdImagesDirectory);
+  return newAdImagesDirectory;
+}
+
+export function generateAdHashOld(adProperties) {
   const relevantProperties = [
     'znamkavozila',
     'modelvozila',
@@ -17,6 +38,31 @@ export function generateAdHash(adProperties) {
     'tipvozila',
     'letoReg',
     'cena',
+  ];
+  let stringToHash = '';
+
+  adProperties.forEach((prop) => {
+    if (relevantProperties.includes(prop.name)) {
+      stringToHash += prop.name + prop.value;
+    }
+  });
+
+  stringToHash = stringToHash.toLowerCase();
+  stringToHash = stringToHash.replace(/\s/g, '_');
+  stringToHash = stringToHash.replace(/[^a-zA-Z0-9_]/g, '');
+
+  return stringToHash;
+}
+
+export function generateAdHash(adProperties) {
+  // Define properties relevant for hash calculation, excluding 'cena'
+  const relevantProperties = [
+    'znamkavozila',
+    'modelvozila',
+    'prevozenikm',
+    'tipvozila',
+    'letoReg',
+    // 'cena', // Excluded from the hash calculation
   ];
   let stringToHash = '';
 
@@ -72,17 +118,33 @@ export async function randomWait(min, max) {
   return wait(randomTime);
 }
 
-const Jimp = require('jimp');
-
-export async function adjustImage(
-  imagePath,
-  blur = 3,
-  saturationScaleFactor = 0.1,
-) {
+export async function reduceSharpnessDesaturateAndBlurEdges(imagePath) {
   const image = await Jimp.read(imagePath);
-  image.gaussian(blurAmount); // Set blurAmount to the desired level
+
+  const blurredImage = image.clone().gaussian(1);
+
+  image.composite(blurredImage, 0, 0, {
+    mode: Jimp.BLEND_OVERLAY,
+    opacitySource: 0.5, // Adjust the opacity to control the amount of sharpness reduction
+    opacityDest: 0.5,
+  });
+
   image.color([
-    { apply: 'saturate', params: [-saturationScaleFactor] }, // saturationScaleFactor should be negative
+    { apply: 'desaturate', params: [4] }, // You might need to adjust this value
   ]);
-  await image.writeAsync(imagePath + 'new');
+
+  const edgeWidth = 2;
+
+  const heavilyBlurredEdgesImage = image.clone().gaussian(1); // Adjust the radius for desired blur amount on edges
+  const center = image
+    .clone()
+    .crop(
+      edgeWidth,
+      edgeWidth,
+      image.bitmap.width - 2 * edgeWidth,
+      image.bitmap.height - 2 * edgeWidth,
+    );
+  heavilyBlurredEdgesImage.composite(center, edgeWidth, edgeWidth);
+
+  await heavilyBlurredEdgesImage.writeAsync(imagePath);
 }

@@ -16,7 +16,7 @@ async function reduceSharpnessDesaturateAndBlurEdges(imagePath) {
 
   // Reduce saturation by desaturating the image
   image.color([
-    { apply: 'desaturate', params: [7] }, // You might need to adjust this value
+    { apply: 'desaturate', params: [4] }, // You might need to adjust this value
   ]);
 
   // Define the edge width for blurring

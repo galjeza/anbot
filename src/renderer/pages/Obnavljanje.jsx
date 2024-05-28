@@ -4,32 +4,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const Obnavljanje = () => {
   const location = useLocation();
   const { selected, pause } = location.state || { selected: [] };
-  const [currentAd, setCurrentAd] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [pauseTimer, setPauseTimer] = useState(0);
-  const [isInPause, setIsInPause] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     let timeoutId;
     const renewAds = async () => {
-      for (let i = 0; i < selected.length; i++) {
-        setCurrentAd(selected[i]);
-        await window.electron.ipcRenderer.renewAd(selected[i].adId);
-        setProgress((i + 1 / selected.length) * 100);
-        const pauseInSeconds = parseInt(pause, 10) * 60;
-        if (i < selected.length - 1) {
-          setPauseTimer(pauseInSeconds);
-          setIsInPause(true);
-          for (let j = pauseInSeconds; j > 0; j--) {
-            setPauseTimer(j);
-            await new Promise(
-              (resolve) => (timeoutId = setTimeout(resolve, 1000)),
-            );
-          }
-          setIsInPause(false);
-        }
-      }
+      await window.electron.ipcRenderer.renewAds(selected, pause);
       navigate('/');
     };
 
@@ -48,21 +28,21 @@ const Obnavljanje = () => {
         </h2>
         {selected.length > 0 ? (
           <>
-            {currentAd && !isInPause ? (
-              <p className="text-center">Obnavljam: {currentAd.name}</p>
-            ) : (
-              <p className="text-center">
-                Naslendnji oglas se bo obnovil čez : {pauseTimer}s
-              </p>
-            )}
-            <div className="w-full bg-gray-700 rounded-full h-2.5 mt-4">
-              <div
-                className="bg-blue-500 h-2.5 rounded-full"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-center mt-2">
-              Stanje obnove: {Math.round(progress)}%
+            <p className="text-center mt-4">
+              Obnavljam izbrane oglase. Ne zapirajte programa.
+            </p>
+            <p className="text-center mt-4">
+              <span className="font-semibold">Število izbranih oglasov:</span>{' '}
+              {selected.length}
+            </p>
+            <p className="text-center mt-4">
+              <span className="font-semibold">Pavza:</span> {pause} minut
+            </p>
+            <p className="text-center mt-4">
+              <span className="font-semibold">
+                Pričakovan čas za obnovo vseh vozil:
+              </span>{' '}
+              {Math.ceil(selected.length * pause + selected.length * 2)} minut
             </p>
           </>
         ) : (

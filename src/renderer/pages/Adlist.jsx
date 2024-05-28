@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const first10letters = (str) => str.slice(0, 35).concat('...');
+
 const AdList = () => {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,6 @@ const AdList = () => {
         </button>
         <label className="flex items-center cursor-pointer">
           <span className="ml-2 text-sm ">Pavza med oglasi (minute)</span>
-
           <input
             type="number"
             value={pause}
@@ -99,7 +100,11 @@ const AdList = () => {
             <div className="flex justify-center items-center w-full">
               <label className="flex items-center cursor-pointer">
                 <div className="ml-2 text-left">
-                  <p className="font-bold text-sm">{ad.name}</p>
+                  <p className="font-bold text-sm text-ellipsis overflow-hidden">
+                    {first10letters(ad.name)}
+                  </p>
+                  {/* Display price here */}
+                  <p className="text-sm">{ad.price}</p>
                   <input
                     type="checkbox"
                     checked={selectedAds.has(ad.adId)}

@@ -35,11 +35,14 @@ async function handleGetAds() {
   return ads;
 }
 
-async function handleRenewAd(event: any, adId: string) {
+async function handleRenewAds(event: any, ads: any, pause: number) {
   console.log('handleRenewAd');
   const userData: any = store.get('userData');
-
-  await renewAd(adId, userData.email, userData.password);
+  for (const ad of ads) {
+    await renewAd(ad.adId, userData.email, userData.password, userData.hdImages);
+    const pauseInMs = pause * 60 * 1000;
+    await new Promise((resolve) => setTimeout(resolve, pauseInMs));
+  }
   return 'renewed';
 }
 
@@ -165,8 +168,10 @@ app
   .whenReady()
   .then(() => {
     ipcMain.handle('get-ads', handleGetAds);
-    ipcMain.handle('renew-ad', handleRenewAd);
+    ipcMain.handle('renew-ads', handleRenewAds);
     ipcMain.handle('test', handleTest);
+    const userDataPath = app.getPath('userData');
+    console.log('userDataPath', userDataPath);
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
