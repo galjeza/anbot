@@ -39,7 +39,12 @@ async function handleRenewAds(event: any, ads: any, pause: number) {
   console.log('handleRenewAd');
   const userData: any = store.get('userData');
   for (const ad of ads) {
-    await renewAd(ad.adId, userData.email, userData.password, userData.hdImages);
+    await renewAd(
+      ad.adId,
+      userData.email,
+      userData.password,
+      userData.hdImages,
+    );
     const pauseInMs = pause * 60 * 1000;
     await new Promise((resolve) => setTimeout(resolve, pauseInMs));
   }

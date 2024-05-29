@@ -177,17 +177,11 @@ const createNewAd = async (browser, carData) => {
       await page.select('select[name=model]', weirdName);
     }
 
-    await randomWait(3, 4);
+    await randomWait(5);
 
-    const selectElement = await page.$('select[name=oblika]');
-    const secondOptionValue = await selectElement.evaluate(
-      (select) => select.options[1].value,
-    );
-    await page.select('select[name=oblika]', secondOptionValue);
+    await page.select('select[name="mesec"]', '06');
 
-    await randomWait(1, 2);
-
-    await page.select('select[name="mesec"]', '6');
+    await wait(5);
     try {
       await page.select(
         'select[name="leto"]',
@@ -205,9 +199,8 @@ const createNewAd = async (browser, carData) => {
     console.log('fixedGasType', fixedGasType);
 
     const fuelElement = await page.click('#' + fixedGasType);
-
-    await wait(2);
-
+    fs.writeFileSync(carDataFilePath, JSON.stringify(carData));
+    console.log('First page done');
     await page.click('button[name="potrdi"]');
     await page.waitForSelector('.supurl', {
       timeout: 0,
