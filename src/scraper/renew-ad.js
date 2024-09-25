@@ -199,7 +199,6 @@ const createNewAd = async (browser, carData) => {
     console.log('fixedGasType', fixedGasType);
 
     const fuelElement = await page.click('#' + fixedGasType);
-    fs.writeFileSync(carDataFilePath, JSON.stringify(carData));
     console.log('First page done');
     await page.click('button[name="potrdi"]');
     await page.waitForSelector('.supurl', {

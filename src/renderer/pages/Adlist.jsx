@@ -16,7 +16,7 @@ const AdList = () => {
       setLoading(true);
       try {
         const fetchedAds = await window.electron.ipcRenderer.getAds();
-        setAds(fetchedAds || []);
+        setAds(fetchedAds.reverse() || []); // Reverse the array after fetching
       } catch (error) {
         console.error('Failed to fetch ads:', error);
       } finally {
