@@ -24,7 +24,7 @@ export async function setupBrowser() {
       '--disable-setuid-sandbox',
       '--window-position=9999,9999',
     ],
-    protocolTimeout: 240000,
+    protocolTimeout: 6000000,
   });
 
   return browser;
