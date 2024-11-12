@@ -27,11 +27,12 @@ class AppUpdater {
   }
 }
 
-async function handleGetAds() {
+async function handleGetAds(event: any, adType: any) {
   console.log('handleGetAds');
+  console.log('adType in main.ts', adType);
   const userData: any = store.get('userData');
   console.log('userData in main.ts', userData);
-  const ads = await fetchActiveAds(userData.brokerId);
+  const ads = await fetchActiveAds(userData.brokerId, adType);
   return ads;
 }
 
@@ -172,7 +173,7 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    ipcMain.handle('get-ads', handleGetAds);
+    ipcMain.handle('get-ads', (event, adType) => handleGetAds(event, adType));
     ipcMain.handle('renew-ads', handleRenewAds);
     ipcMain.handle('test', handleTest);
     const userDataPath = app.getPath('userData');

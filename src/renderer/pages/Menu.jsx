@@ -135,12 +135,26 @@ const Menu = () => {
             Konfiguracija
           </Link>
           {isSubscriptionActive ? (
-            <Link
-              to="/adlist"
-              className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
-            >
-              Obnovi oglase
-            </Link>
+            <>
+              <Link
+                to="/adlist"
+                state={{
+                  type: 'car',
+                }}
+                className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
+              >
+                Obnovi avtomobile
+              </Link>
+              <Link
+                to="/adlist"
+                state={{
+                  type: 'dostavna',
+                }}
+                className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
+              >
+                Obnovi dostavna vozila
+              </Link>
+            </>
           ) : (
             <p>
               <span className="text-red-400">

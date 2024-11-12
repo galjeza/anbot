@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { useLocation } from 'react-router-dom';
 const first10letters = (str) => str.slice(0, 35).concat('...');
 
 const AdList = () => {
@@ -11,11 +11,16 @@ const AdList = () => {
   const [pause, setPause] = useState(60);
   const navigate = useNavigate();
 
+  const location = useLocation();
+  const { type } = location.state || {}; // Get type from state
+
+  console.log('Type:', type);
+
   useEffect(() => {
     const getAds = async () => {
       setLoading(true);
       try {
-        const fetchedAds = await window.electron.ipcRenderer.getAds();
+        const fetchedAds = await window.electron.ipcRenderer.getAds(type);
         setAds(fetchedAds.reverse() || []); // Reverse the array after fetching
       } catch (error) {
         console.error('Failed to fetch ads:', error);

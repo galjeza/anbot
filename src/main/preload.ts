@@ -21,8 +21,9 @@ const electronHandler = {
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
-    getAds() {
-      return ipcRenderer.invoke('get-ads');
+    getAds(adType: string) {
+      console.log('Type in preload', adType);
+      return ipcRenderer.invoke('get-ads', adType);
     },
 
     renewAds(ads: string, pause: number) {

@@ -1,15 +1,15 @@
 import { setupBrowser } from './utils/browser-utils.js';
-import { AVTONET_BROKER_URL } from './utils/constants.js';
+import { AVTONET_URLS } from './utils/constants.js';
 import { saveList } from './utils/utils.js';
 
-export async function fetchActiveAds(brokerId) {
-  console.log(`Starting fetchActiveAds for brokerId: ${brokerId}`); // Log at the start
+export async function fetchActiveAds(brokerId, adType) {
+  console.log('Ad type in fetchActiveAds: ', adType);
+  const url = AVTONET_URLS[adType] + brokerId;
   const browser = await setupBrowser();
   const [page] = await browser.pages();
-
+  console.log('Navigating to URL: ', url);
   try {
-    console.log(`Navigating to URL: ${AVTONET_BROKER_URL + brokerId}`); // Log before navigating
-    await page.goto(AVTONET_BROKER_URL + brokerId);
+    await page.goto(url);
     console.log(`Waiting for selector '.GO-Results-Row'`); // Log waiting for selector
     await page.waitForSelector('.GO-Results-Row');
     let adElements = await page.$$('.GO-Results-Row');
