@@ -125,13 +125,23 @@ const getCarData = async (browser, adId, hdImages) => {
   return carData;
 };
 
-const createNewAd = async (browser, carData) => {
+const createNewAd = async (browser, carData, adType) => {
+  console.log('Ad type');
+  console.log(adType);
+
+  const newAdUrl = (() => {
+    switch (adType) {
+      case 'car':
+        return 'https://www.avto.net/_2016mojavtonet/ad_select_rubric_icons.asp?SID=10000';
+      case 'dostavna':
+        return 'https://www.avto.net/_2016mojavtonet/ad_insert_car_step1.asp?SID=20000';
+    }
+  })();
+
   try {
     const [page] = await browser.pages();
     // go to the new ad page
-    await page.goto(
-      'https://www.avto.net/_2016mojavtonet/ad_select_rubric_icons.asp?SID=10000',
-    );
+    await page.goto(newAdUrl);
     await page.waitForSelector('select[name=znamka]', { timeout: 0 });
 
     // check if select with name znamka includes value of carData
@@ -163,10 +173,14 @@ const createNewAd = async (browser, carData) => {
       (options) => options.map((option) => option.value),
     );
 
-    // check if they contain a value of carModel
-    const carModel = carData.find((data) => data.name === 'model').value;
-    console.log('carModel', carModel);
-
+    const carModel = (() => {
+      console.log('adType in carmodel', adType);
+      if (adType === 'dostavna') {
+        return carData.find((data) => data.name === 'modelTEMP').value;
+      } else {
+        return carData.find((data) => data.name === 'model').value;
+      }
+    })();
     if (modelOptionsValues.includes(carModel)) {
       await page.select('select[name=model]', carModel);
     } else {
@@ -176,6 +190,11 @@ const createNewAd = async (browser, carData) => {
       console.log('weirdName', weirdName);
       await page.select('select[name=model]', weirdName);
     }
+
+    await page.select(
+      'select[name=oblika]',
+      carData.find((data) => data.name === 'oblika').value,
+    );
 
     await randomWait(5);
 
@@ -201,15 +220,25 @@ const createNewAd = async (browser, carData) => {
     const fuelElement = await page.click('#' + fixedGasType);
     console.log('First page done');
     await page.click('button[name="potrdi"]');
-    await page.waitForSelector('.supurl', {
-      timeout: 0,
-    });
-    await page.click('.supurl');
-    await page.waitForSelector('input[name=znamka]', { timeout: 0 });
+
+    console.log('GOT TO #0');
+    if (adType === 'car') {
+      await page.waitForSelector('.supurl', {
+        timeout: 0,
+      });
+
+      console.log('GOT PASDT SUPUTLR');
+      await page.click('.supurl');
+    }
+
+    console.log('GOT got cena');
+
+    await page.waitForSelector('input[name=cena]', { timeout: 0 });
 
     // check if select with name model has value of carModel
 
     await wait(2);
+    console.log('GOT to #1');
     const frameElement = await page.$('iframe');
     if (frameElement) {
       console.log('frameElement found');
@@ -219,11 +248,13 @@ const createNewAd = async (browser, carData) => {
         (frameBody, htmlOpis) => (frameBody.innerHTML = htmlOpis),
         carData.find((data) => data.name === 'htmlOpis').value,
       );
-
+      console.log('GOT to #2');
       await wait(2);
     } else {
       console.log('frameElement not found');
     }
+
+    console.log('GOT to #3');
 
     const checkboxes = await page.$$('input[type=checkbox]');
     for (const checkbox of checkboxes) {
@@ -234,6 +265,7 @@ const createNewAd = async (browser, carData) => {
       }
     }
 
+    console.log('GOT to #4');
     const inputs = await page.$$('input[type=text]');
     for (const input of inputs) {
       try {
@@ -275,8 +307,10 @@ const createNewAd = async (browser, carData) => {
       }
     }
 
-    if (carData.find((data) => data.name === 'VINobjavi').value === '1') {
-      await page.click('#VINobjavi');
+    if (adType === 'car') {
+      if (carData.find((data) => data.name === 'VINobjavi').value === '1') {
+        await page.click('#VINobjavi');
+      }
     }
 
     await wait(2);
@@ -354,11 +388,16 @@ const deleteOldAd = async (browser, adId) => {
   );
 };
 
-export const renewAd = async (adId, email, password, hdImages) => {
+export const renewAd = async (adId, email, password, hdImages, adType) => {
   const browser = await setupBrowser();
   await loginToAvtonet(browser, email, password);
   const carData = await getCarData(browser, adId, hdImages);
-  await createNewAd(browser, carData);
+  const carDataJsonPath = path.join('./carDataTest', `${adId}.json`);
+  fs.mkdirSync(path.dirname(carDataJsonPath), { recursive: true });
+  fs.writeFileSync(carDataJsonPath, JSON.stringify(carData, null, 2));
+  console.log('Car data');
+  console.log(carData);
+  await createNewAd(browser, carData, adType);
   await uploadImages(browser, carData);
   await deleteOldAd(browser, adId);
 

@@ -21,7 +21,7 @@ const AdList = () => {
       setLoading(true);
       try {
         const fetchedAds = await window.electron.ipcRenderer.getAds(type);
-        setAds(fetchedAds.reverse() || []); // Reverse the array after fetching
+        setAds(fetchedAds || []); // Reverse the array after fetching
       } catch (error) {
         console.error('Failed to fetch ads:', error);
       } finally {
@@ -52,7 +52,7 @@ const AdList = () => {
 
   const handleSubmit = () => {
     const selected = ads.filter((ad) => selectedAds.has(ad.adId));
-    navigate('/obnavljanje', { state: { selected, pause } });
+    navigate('/obnavljanje', { state: { selected, pause, type } });
   };
 
   if (loading) {

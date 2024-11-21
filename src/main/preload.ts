@@ -1,5 +1,6 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
+import { AnyARecord } from 'dns';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export type Channels = 'ipc-example';
@@ -26,8 +27,8 @@ const electronHandler = {
       return ipcRenderer.invoke('get-ads', adType);
     },
 
-    renewAds(ads: string, pause: number) {
-      return ipcRenderer.invoke('renew-ads', ads, pause);
+    renewAds(ads: string, pause: number, adType: any) {
+      return ipcRenderer.invoke('renew-ads', ads, pause, adType);
     },
   },
   store: {

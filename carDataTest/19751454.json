@@ -1,0 +1,1340 @@
+[
+  {
+    "name": "financekom",
+    "value": ""
+  },
+  {
+    "name": "opombe",
+    "value": "ODLIČNO OHRANJEN\nREDNO SERVISIRAN\nNOV VZTRAJNIK IN SKLOPKA\n\nKLIMA,PDC,TEMPOMAT,DVOJNA DRSNA VRATA,GRETJE SEDEŽA,WEBASTO....\n\nGARANCIJA\n\nVSA VOZILA SO V POKRITEM IN OSVETLJENEM PROSTORU\n\nMOŽNOST DOPLAČILA JAMSTVA NA VOZILO DO 12 ALI 24 MESECEV V SODELOVANJU Z GSV JAMSTVA\nGARANTIRAMO VAM VAREN NAKUP VOZILA\nPISNA GARANCIJA NA PREVOŽENE KILOMETRE\n\n---------------------------------------------------------------------\n• Vsa vozila so strokovno pregledana in preverjena\n• Menjava vozila staro za staro\n• Financiranje na položnice do 84 mesecev že z 10% pologom\n• Vaše staro vozilo je lahko kot polog pri financiranju\n• Možnost nakupa na položnice tudi za zaposlene za določen čas\n• Financiranje uredimo tudi za tujce z stalnim bivanjem\n• Financiranje uredimo tudi za zaposlene v tujini\n• Vse potrebno za financiranje vozila uredite pri nas\n• Do 50% Komercialni popust na ZAVAROVANJE AO in AK\n---------------------------------------------------------------------\nPotrebna dokumentacija :\n•kopija osebne,bančne kartice in vozniško dovoljenje\n•davčna številka\n•zadnje tri plačilne liste//dokazila ZPIZ-za upokojence\n"
+  },
+  {
+    "name": "garancija",
+    "value": "0"
+  },
+  {
+    "name": "guarantee",
+    "value": "0"
+  },
+  {
+    "name": "jamstvo",
+    "value": "0"
+  },
+  {
+    "name": "oldtimer",
+    "value": "0"
+  },
+  {
+    "name": "cenaExport",
+    "value": "1"
+  },
+  {
+    "name": "gotpopust",
+    "value": "0"
+  },
+  {
+    "name": "zadcena",
+    "value": "0"
+  },
+  {
+    "name": "kredit",
+    "value": "0"
+  },
+  {
+    "name": "leasing",
+    "value": "1"
+  },
+  {
+    "name": "prevzemleas",
+    "value": "0"
+  },
+  {
+    "name": "naobroke",
+    "value": "0"
+  },
+  {
+    "name": "menjava",
+    "value": "1"
+  },
+  {
+    "name": "eutax",
+    "value": "1"
+  },
+  {
+    "name": "prodano",
+    "value": "0"
+  },
+  {
+    "name": "objaviID",
+    "value": "1"
+  },
+  {
+    "name": "okvara",
+    "value": "0"
+  },
+  {
+    "name": "poplavljeno",
+    "value": "0"
+  },
+  {
+    "name": "SK",
+    "value": "1"
+  },
+  {
+    "name": "SKpotrjena",
+    "value": "0"
+  },
+  {
+    "name": "SLOporeklo",
+    "value": "0"
+  },
+  {
+    "name": "gar",
+    "value": "1"
+  },
+  {
+    "name": "nek",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat01",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat02",
+    "value": "0"
+  },
+  {
+    "name": "dostvrat03",
+    "value": "0"
+  },
+  {
+    "name": "dostvrat04",
+    "value": "1"
+  },
+  {
+    "name": "EQdrsnalevo",
+    "value": "1"
+  },
+  {
+    "name": "EQdrsnadesno",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat05",
+    "value": "0"
+  },
+  {
+    "name": "kovinska",
+    "value": "0"
+  },
+  {
+    "name": "elstreha",
+    "value": "0"
+  },
+  {
+    "name": "ALU",
+    "value": "0"
+  },
+  {
+    "name": "ABSzavore",
+    "value": "1"
+  },
+  {
+    "name": "BAS",
+    "value": "0"
+  },
+  {
+    "name": "ESP",
+    "value": "1"
+  },
+  {
+    "name": "nivopodvozja",
+    "value": "0"
+  },
+  {
+    "name": "FAirVzm",
+    "value": "0"
+  },
+  {
+    "name": "EQtsc",
+    "value": "0"
+  },
+  {
+    "name": "EQlac",
+    "value": "0"
+  },
+  {
+    "name": "4wd",
+    "value": "0"
+  },
+  {
+    "name": "dostkab01",
+    "value": "0"
+  },
+  {
+    "name": "dostnot07",
+    "value": "0"
+  },
+  {
+    "name": "ABC",
+    "value": "0"
+  },
+  {
+    "name": "EQrsc",
+    "value": "0"
+  },
+  {
+    "name": "nadzortlaka",
+    "value": "0"
+  },
+  {
+    "name": "xenon",
+    "value": "0"
+  },
+  {
+    "name": "bixenon",
+    "value": "0"
+  },
+  {
+    "name": "FLEDZar",
+    "value": "0"
+  },
+  {
+    "name": "FLedFro",
+    "value": "0"
+  },
+  {
+    "name": "FLedRea",
+    "value": "0"
+  },
+  {
+    "name": "meglenke",
+    "value": "0"
+  },
+  {
+    "name": "AdLight",
+    "value": "0"
+  },
+  {
+    "name": "EQroadsign",
+    "value": "0"
+  },
+  {
+    "name": "3luc",
+    "value": "1"
+  },
+  {
+    "name": "pranjezaro",
+    "value": "0"
+  },
+  {
+    "name": "alarm",
+    "value": "0"
+  },
+  {
+    "name": "blokadamotorja",
+    "value": "0"
+  },
+  {
+    "name": "kodamotorja",
+    "value": "0"
+  },
+  {
+    "name": "FSisMrt",
+    "value": "0"
+  },
+  {
+    "name": "senzordez",
+    "value": "0"
+  },
+  {
+    "name": "FSamZav",
+    "value": "0"
+  },
+  {
+    "name": "FVozOpo",
+    "value": "0"
+  },
+  {
+    "name": "zakadilce",
+    "value": "0"
+  },
+  {
+    "name": "sedezkomfort",
+    "value": "0"
+  },
+  {
+    "name": "sedezorto",
+    "value": "0"
+  },
+  {
+    "name": "sedezpovisini",
+    "value": "1"
+  },
+  {
+    "name": "elsedez",
+    "value": "0"
+  },
+  {
+    "name": "paketmemo",
+    "value": "0"
+  },
+  {
+    "name": "gretjesedez",
+    "value": "0"
+  },
+  {
+    "name": "sedezcool",
+    "value": "0"
+  },
+  {
+    "name": "FHlaPre",
+    "value": "0"
+  },
+  {
+    "name": "naslonroke",
+    "value": "1"
+  },
+  {
+    "name": "dostnot03",
+    "value": "0"
+  },
+  {
+    "name": "dostnot04",
+    "value": "1"
+  },
+  {
+    "name": "dostnot05",
+    "value": "1"
+  },
+  {
+    "name": "dostnot02",
+    "value": "1"
+  },
+  {
+    "name": "dostnot01",
+    "value": "0"
+  },
+  {
+    "name": "dostkab04",
+    "value": "0"
+  },
+  {
+    "name": "dostkab05",
+    "value": "0"
+  },
+  {
+    "name": "EQ12v",
+    "value": "0"
+  },
+  {
+    "name": "klima",
+    "value": "1"
+  },
+  {
+    "name": "aklima",
+    "value": "0"
+  },
+  {
+    "name": "klimazadaj",
+    "value": "0"
+  },
+  {
+    "name": "dostnot06",
+    "value": "0"
+  },
+  {
+    "name": "tonirana",
+    "value": "1"
+  },
+  {
+    "name": "estekla2",
+    "value": "1"
+  },
+  {
+    "name": "eogledala",
+    "value": "1"
+  },
+  {
+    "name": "gretjeogledal",
+    "value": "1"
+  },
+  {
+    "name": "zloziogledala",
+    "value": "0"
+  },
+  {
+    "name": "keyless",
+    "value": "0"
+  },
+  {
+    "name": "centralno",
+    "value": "0"
+  },
+  {
+    "name": "daljinskocentralno",
+    "value": "1"
+  },
+  {
+    "name": "epaket",
+    "value": "1"
+  },
+  {
+    "name": "NV",
+    "value": "0"
+  },
+  {
+    "name": "NVplus",
+    "value": "1"
+  },
+  {
+    "name": "servo",
+    "value": "1"
+  },
+  {
+    "name": "usnjenvolan",
+    "value": "0"
+  },
+  {
+    "name": "multivolan",
+    "value": "0"
+  },
+  {
+    "name": "tempomat",
+    "value": "1"
+  },
+  {
+    "name": "tempomatplus",
+    "value": "0"
+  },
+  {
+    "name": "FElPar",
+    "value": "0"
+  },
+  {
+    "name": "avtoradio",
+    "value": "1"
+  },
+  {
+    "name": "cd",
+    "value": "0"
+  },
+  {
+    "name": "cdmenjalnik",
+    "value": "0"
+  },
+  {
+    "name": "MP3",
+    "value": "0"
+  },
+  {
+    "name": "DVD",
+    "value": "0"
+  },
+  {
+    "name": "harddisk",
+    "value": "0"
+  },
+  {
+    "name": "USB",
+    "value": "0"
+  },
+  {
+    "name": "TV",
+    "value": "0"
+  },
+  {
+    "name": "EQradioDAB",
+    "value": "0"
+  },
+  {
+    "name": "mobi",
+    "value": "0"
+  },
+  {
+    "name": "avtotelefon",
+    "value": "0"
+  },
+  {
+    "name": "racunalnik",
+    "value": "0"
+  },
+  {
+    "name": "komunikacijskipaket",
+    "value": "0"
+  },
+  {
+    "name": "navigacija",
+    "value": "0"
+  },
+  {
+    "name": "navitv",
+    "value": "0"
+  },
+  {
+    "name": "dostkab02",
+    "value": "0"
+  },
+  {
+    "name": "dostkab03",
+    "value": "0"
+  },
+  {
+    "name": "mreza",
+    "value": "0"
+  },
+  {
+    "name": "sani",
+    "value": "0"
+  },
+  {
+    "name": "VK",
+    "value": "0"
+  },
+  {
+    "name": "FSisKla",
+    "value": "0"
+  },
+  {
+    "name": "FSisPar",
+    "value": "0"
+  },
+  {
+    "name": "PDC",
+    "value": "1"
+  },
+  {
+    "name": "FParKam",
+    "value": "0"
+  },
+  {
+    "name": "FSenFro",
+    "value": "0"
+  },
+  {
+    "name": "FSenRea",
+    "value": "0"
+  },
+  {
+    "name": "FPar360",
+    "value": "0"
+  },
+  {
+    "name": "FVzvKam",
+    "value": "0"
+  },
+  {
+    "name": "ZaInvalide",
+    "value": "0"
+  },
+  {
+    "name": "oblika",
+    "value": "21"
+  },
+  {
+    "name": "starost",
+    "value": "303"
+  },
+  {
+    "name": "mesReg",
+    "value": "05"
+  },
+  {
+    "name": "tehmesec",
+    "value": "06"
+  },
+  {
+    "name": "lastnikov",
+    "value": "1"
+  },
+  {
+    "name": "obrokov",
+    "value": "1"
+  },
+  {
+    "name": "menjalnik",
+    "value": "402"
+  },
+  {
+    "name": "mocmera",
+    "value": "kW"
+  },
+  {
+    "name": "dostsedezev",
+    "value": "2+1"
+  },
+  {
+    "name": "barva",
+    "value": "bela"
+  },
+  {
+    "name": "streha",
+    "value": ""
+  },
+  {
+    "name": "oblazinjenje",
+    "value": ""
+  },
+  {
+    "name": "barvaoblazin",
+    "value": ""
+  },
+  {
+    "name": "IDoglasa",
+    "value": "19751454"
+  },
+  {
+    "name": "richtext",
+    "value": "0"
+  },
+  {
+    "name": "spremenljivka",
+    "value": "0883MQO0"
+  },
+  {
+    "name": "spremenljivka2",
+    "value": "3880O2"
+  },
+  {
+    "name": "spremenljivka3",
+    "value": "OT0883"
+  },
+  {
+    "name": "rubrika",
+    "value": "2"
+  },
+  {
+    "name": "podrubrika",
+    "value": "21"
+  },
+  {
+    "name": "znamka",
+    "value": "Volkswagen"
+  },
+  {
+    "name": "znamkaTEMP",
+    "value": "Volkswagen"
+  },
+  {
+    "name": "0883MQO0",
+    "value": "Transporter"
+  },
+  {
+    "name": "modelTEMP",
+    "value": "Transporter"
+  },
+  {
+    "name": "tip",
+    "value": "2.0 TDI L1H1"
+  },
+  {
+    "name": "garancija",
+    "value": "1"
+  },
+  {
+    "name": "guarantee",
+    "value": "1"
+  },
+  {
+    "name": "jamstvo",
+    "value": "1"
+  },
+  {
+    "name": "oldtimer",
+    "value": "1"
+  },
+  {
+    "name": "letoReg",
+    "value": "2014"
+  },
+  {
+    "name": "letnik",
+    "value": "2014"
+  },
+  {
+    "name": "tehleto",
+    "value": "2025"
+  },
+  {
+    "name": "prevozenikm",
+    "value": "166000"
+  },
+  {
+    "name": "VIN",
+    "value": "0"
+  },
+  {
+    "name": "najem",
+    "value": "0"
+  },
+  {
+    "name": "najem",
+    "value": "1"
+  },
+  {
+    "name": "cena",
+    "value": "11990"
+  },
+  {
+    "name": "cenaNETO",
+    "value": "9827"
+  },
+  {
+    "name": "cenaExport",
+    "value": "1"
+  },
+  {
+    "name": "gotpopust",
+    "value": "1"
+  },
+  {
+    "name": "zadcena",
+    "value": "1"
+  },
+  {
+    "name": "kredit",
+    "value": "1"
+  },
+  {
+    "name": "leasing",
+    "value": "1"
+  },
+  {
+    "name": "prevzemleas",
+    "value": "1"
+  },
+  {
+    "name": "naobroke",
+    "value": "1"
+  },
+  {
+    "name": "menjava",
+    "value": "1"
+  },
+  {
+    "name": "eutax",
+    "value": "1"
+  },
+  {
+    "name": "prodano",
+    "value": "1"
+  },
+  {
+    "name": "TESTcenaEURO",
+    "value": "11990"
+  },
+  {
+    "name": "TESTAkcijaCena",
+    "value": "0"
+  },
+  {
+    "name": "TESTPrejsnjaCena",
+    "value": "0"
+  },
+  {
+    "name": "TESTPrejsnjaCenaDatum",
+    "value": "24.6.2024 12:46:00"
+  },
+  {
+    "name": "TESTDatumobjave",
+    "value": "24.6.2024 12:46:00"
+  },
+  {
+    "name": "TESTDatumurejanja",
+    "value": "23.10.2024 14:25:00"
+  },
+  {
+    "name": "polog",
+    "value": "0"
+  },
+  {
+    "name": "obrok",
+    "value": "0"
+  },
+  {
+    "name": "financekomcountdown",
+    "value": "400"
+  },
+  {
+    "name": "interniID",
+    "value": ""
+  },
+  {
+    "name": "objaviID",
+    "value": "1"
+  },
+  {
+    "name": "administratoroglasa",
+    "value": ""
+  },
+  {
+    "name": "prodamvceloti",
+    "value": "1"
+  },
+  {
+    "name": "vozno",
+    "value": "1"
+  },
+  {
+    "name": "vozno",
+    "value": "0"
+  },
+  {
+    "name": "poskodovan",
+    "value": "0"
+  },
+  {
+    "name": "poskodovan",
+    "value": "1"
+  },
+  {
+    "name": "karambolirano",
+    "value": "0"
+  },
+  {
+    "name": "karambolirano",
+    "value": "1"
+  },
+  {
+    "name": "okvara",
+    "value": "1"
+  },
+  {
+    "name": "poplavljeno",
+    "value": "1"
+  },
+  {
+    "name": "SK",
+    "value": "1"
+  },
+  {
+    "name": "SKpotrjena",
+    "value": "1"
+  },
+  {
+    "name": "SLOporeklo",
+    "value": "1"
+  },
+  {
+    "name": "gar",
+    "value": "1"
+  },
+  {
+    "name": "nek",
+    "value": "1"
+  },
+  {
+    "name": "gorivo",
+    "value": "diesel"
+  },
+  {
+    "name": "kw",
+    "value": "75"
+  },
+  {
+    "name": "ccm",
+    "value": "1968"
+  },
+  {
+    "name": "skteza",
+    "value": "0"
+  },
+  {
+    "name": "volumen",
+    "value": "0"
+  },
+  {
+    "name": "dostvrat01",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat02",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat03",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat04",
+    "value": "1"
+  },
+  {
+    "name": "EQdrsnalevo",
+    "value": "1"
+  },
+  {
+    "name": "EQdrsnadesno",
+    "value": "1"
+  },
+  {
+    "name": "dostvrat05",
+    "value": "1"
+  },
+  {
+    "name": "kovinska",
+    "value": "1"
+  },
+  {
+    "name": "elstreha",
+    "value": "1"
+  },
+  {
+    "name": "ALU",
+    "value": "1"
+  },
+  {
+    "name": "ALUopis",
+    "value": ""
+  },
+  {
+    "name": "ABSzavore",
+    "value": "1"
+  },
+  {
+    "name": "BAS",
+    "value": "1"
+  },
+  {
+    "name": "ESP",
+    "value": "1"
+  },
+  {
+    "name": "nivopodvozja",
+    "value": "1"
+  },
+  {
+    "name": "FAirVzm",
+    "value": "1"
+  },
+  {
+    "name": "EQtsc",
+    "value": "1"
+  },
+  {
+    "name": "EQlac",
+    "value": "1"
+  },
+  {
+    "name": "4wd",
+    "value": "1"
+  },
+  {
+    "name": "dostkab01",
+    "value": "1"
+  },
+  {
+    "name": "dostnot07",
+    "value": "1"
+  },
+  {
+    "name": "ABC",
+    "value": "1"
+  },
+  {
+    "name": "EQrsc",
+    "value": "1"
+  },
+  {
+    "name": "airbagov",
+    "value": "1"
+  },
+  {
+    "name": "nadzortlaka",
+    "value": "1"
+  },
+  {
+    "name": "xenon",
+    "value": "1"
+  },
+  {
+    "name": "bixenon",
+    "value": "1"
+  },
+  {
+    "name": "FLEDZar",
+    "value": "1"
+  },
+  {
+    "name": "FLedFro",
+    "value": "1"
+  },
+  {
+    "name": "FLedRea",
+    "value": "1"
+  },
+  {
+    "name": "meglenke",
+    "value": "1"
+  },
+  {
+    "name": "AdLight",
+    "value": "1"
+  },
+  {
+    "name": "EQroadsign",
+    "value": "1"
+  },
+  {
+    "name": "3luc",
+    "value": "1"
+  },
+  {
+    "name": "pranjezaro",
+    "value": "1"
+  },
+  {
+    "name": "alarm",
+    "value": "1"
+  },
+  {
+    "name": "blokadamotorja",
+    "value": "1"
+  },
+  {
+    "name": "kodamotorja",
+    "value": "1"
+  },
+  {
+    "name": "FSisMrt",
+    "value": "1"
+  },
+  {
+    "name": "senzordez",
+    "value": "1"
+  },
+  {
+    "name": "FSamZav",
+    "value": "1"
+  },
+  {
+    "name": "FVozOpo",
+    "value": "1"
+  },
+  {
+    "name": "zakadilce",
+    "value": "1"
+  },
+  {
+    "name": "sedezkomfort",
+    "value": "1"
+  },
+  {
+    "name": "sedezorto",
+    "value": "1"
+  },
+  {
+    "name": "sedezpovisini",
+    "value": "1"
+  },
+  {
+    "name": "elsedez",
+    "value": "1"
+  },
+  {
+    "name": "paketmemo",
+    "value": "1"
+  },
+  {
+    "name": "gretjesedez",
+    "value": "1"
+  },
+  {
+    "name": "sedezcool",
+    "value": "1"
+  },
+  {
+    "name": "FHlaPre",
+    "value": "1"
+  },
+  {
+    "name": "naslonroke",
+    "value": "1"
+  },
+  {
+    "name": "dostnot03",
+    "value": "1"
+  },
+  {
+    "name": "dostnot04",
+    "value": "1"
+  },
+  {
+    "name": "dostnot05",
+    "value": "1"
+  },
+  {
+    "name": "dostnot02",
+    "value": "1"
+  },
+  {
+    "name": "dostnot01",
+    "value": "1"
+  },
+  {
+    "name": "dostkab04",
+    "value": "1"
+  },
+  {
+    "name": "dostkab05",
+    "value": "1"
+  },
+  {
+    "name": "EQ12v",
+    "value": "1"
+  },
+  {
+    "name": "klima",
+    "value": "1"
+  },
+  {
+    "name": "aklima",
+    "value": "1"
+  },
+  {
+    "name": "klimazadaj",
+    "value": "1"
+  },
+  {
+    "name": "dostnot06",
+    "value": "1"
+  },
+  {
+    "name": "tonirana",
+    "value": "1"
+  },
+  {
+    "name": "estekla2",
+    "value": "1"
+  },
+  {
+    "name": "eogledala",
+    "value": "1"
+  },
+  {
+    "name": "gretjeogledal",
+    "value": "1"
+  },
+  {
+    "name": "zloziogledala",
+    "value": "1"
+  },
+  {
+    "name": "keyless",
+    "value": "1"
+  },
+  {
+    "name": "centralno",
+    "value": "1"
+  },
+  {
+    "name": "daljinskocentralno",
+    "value": "1"
+  },
+  {
+    "name": "epaket",
+    "value": "1"
+  },
+  {
+    "name": "NV",
+    "value": "1"
+  },
+  {
+    "name": "NVplus",
+    "value": "1"
+  },
+  {
+    "name": "servo",
+    "value": "1"
+  },
+  {
+    "name": "usnjenvolan",
+    "value": "1"
+  },
+  {
+    "name": "multivolan",
+    "value": "1"
+  },
+  {
+    "name": "tempomat",
+    "value": "1"
+  },
+  {
+    "name": "tempomatplus",
+    "value": "1"
+  },
+  {
+    "name": "FElPar",
+    "value": "1"
+  },
+  {
+    "name": "avtoradio",
+    "value": "1"
+  },
+  {
+    "name": "avtoradioopis",
+    "value": ""
+  },
+  {
+    "name": "cd",
+    "value": "1"
+  },
+  {
+    "name": "cdopis",
+    "value": ""
+  },
+  {
+    "name": "cdmenjalnik",
+    "value": "1"
+  },
+  {
+    "name": "MP3",
+    "value": "1"
+  },
+  {
+    "name": "DVD",
+    "value": "1"
+  },
+  {
+    "name": "harddisk",
+    "value": "1"
+  },
+  {
+    "name": "USB",
+    "value": "1"
+  },
+  {
+    "name": "TV",
+    "value": "1"
+  },
+  {
+    "name": "EQradioDAB",
+    "value": "1"
+  },
+  {
+    "name": "mobi",
+    "value": "1"
+  },
+  {
+    "name": "avtotelefon",
+    "value": "1"
+  },
+  {
+    "name": "racunalnik",
+    "value": "1"
+  },
+  {
+    "name": "komunikacijskipaket",
+    "value": "1"
+  },
+  {
+    "name": "navigacija",
+    "value": "1"
+  },
+  {
+    "name": "navitv",
+    "value": "1"
+  },
+  {
+    "name": "dostkab02",
+    "value": "1"
+  },
+  {
+    "name": "dostkab03",
+    "value": "1"
+  },
+  {
+    "name": "mreza",
+    "value": "1"
+  },
+  {
+    "name": "sani",
+    "value": "1"
+  },
+  {
+    "name": "VK",
+    "value": "1"
+  },
+  {
+    "name": "FSisKla",
+    "value": "1"
+  },
+  {
+    "name": "FSisPar",
+    "value": "1"
+  },
+  {
+    "name": "PDC",
+    "value": "1"
+  },
+  {
+    "name": "FParKam",
+    "value": "1"
+  },
+  {
+    "name": "FSenFro",
+    "value": "1"
+  },
+  {
+    "name": "FSenRea",
+    "value": "1"
+  },
+  {
+    "name": "FPar360",
+    "value": "1"
+  },
+  {
+    "name": "FVzvKam",
+    "value": "1"
+  },
+  {
+    "name": "ZaInvalide",
+    "value": "1"
+  },
+  {
+    "name": "countdown",
+    "value": "4000"
+  },
+  {
+    "name": "rokdobave",
+    "value": "0"
+  },
+  {
+    "name": "rokdobave",
+    "value": "1"
+  },
+  {
+    "name": "rokdobave",
+    "value": "3"
+  },
+  {
+    "name": "rokdobave",
+    "value": "7"
+  },
+  {
+    "name": "rokdobave",
+    "value": "14"
+  },
+  {
+    "name": "rokdobave",
+    "value": "30"
+  },
+  {
+    "name": "htmlOpis"
+  },
+  {
+    "name": "images",
+    "value": [
+      "https://images.avto.net/photo/19751454/1046323.jpg",
+      "https://images.avto.net/photo/19751454/2046329.jpg",
+      "https://images.avto.net/photo/19751454/3046335.jpg",
+      "https://images.avto.net/photo/19751454/4046341.jpg",
+      "https://images.avto.net/photo/19751454/5046348.jpg",
+      "https://images.avto.net/photo/19751454/6046355.jpg",
+      "https://images.avto.net/photo/19751454/7046362.jpg",
+      "https://images.avto.net/photo/19751454/8046373.jpg",
+      "https://images.avto.net/photo/19751454/9046381.jpg",
+      "https://images.avto.net/photo/19751454/10046391.jpg"
+    ]
+  }
+]

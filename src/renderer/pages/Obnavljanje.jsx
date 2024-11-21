@@ -3,13 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const Obnavljanje = () => {
   const location = useLocation();
-  const { selected, pause } = location.state || { selected: [] };
+  const { selected, pause, type } = location.state || { selected: [] };
   const navigate = useNavigate();
+
+  console.log('Type in obnavljanje: ', type);
 
   useEffect(() => {
     let timeoutId;
     const renewAds = async () => {
-      await window.electron.ipcRenderer.renewAds(selected, pause);
+      await window.electron.ipcRenderer.renewAds(selected, pause, type);
       navigate('/');
     };
 
