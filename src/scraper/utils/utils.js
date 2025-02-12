@@ -15,19 +15,50 @@ export async function saveList(list, filename) {
 export function getAdImagesDirectory(carData, userDataPath) {
   const newHash = generateAdHash(carData); // Generate hash without price
   const oldHash = generateAdHashOld(carData); // Assume this function generates a hash with the price included, similar to your original function
+  const brandNewHash = generateAdHashBrandNew(carData); // Assume this function generates a hash without the price, similar to your original function
 
   // Construct directory paths for both old and new hashes
   const newAdImagesDirectory = path.join(userDataPath, 'AdImages', newHash);
   const oldAdImagesDirectory = path.join(userDataPath, 'AdImages', oldHash);
+  const brandNewAdImagesDirectory = path.join(
+    userDataPath,
+    'AdImages',
+    brandNewHash,
+  );
 
   // Check if the directory with the old hash exists
   if (fs.existsSync(oldAdImagesDirectory)) {
     console.log('Old hash directory exists:', oldAdImagesDirectory);
     return oldAdImagesDirectory;
   }
-  // If not, use the new hash directory (this also covers the scenario of creating a new directory)
-  console.log('New hash directory exists:', newAdImagesDirectory);
-  return newAdImagesDirectory;
+  if (fs.existsSync(newAdImagesDirectory)) {
+    console.log('Brand new hash directory exists:', brandNewAdImagesDirectory);
+    return newAdImagesDirectory;
+  }
+  console.log('New hash directory exists:', brandNewAdImagesDirectory);
+  return brandNewAdImagesDirectory;
+}
+
+export function generateAdHashBrandNew(adProperties) {
+  const relevantProperties = [
+    'znamkavozila',
+    'modelvozila',
+    'prevozenikm',
+    'letoReg',
+  ];
+  let stringToHash = '';
+
+  adProperties.forEach((prop) => {
+    if (relevantProperties.includes(prop.name)) {
+      stringToHash += prop.name + prop.value;
+    }
+  });
+
+  stringToHash = stringToHash.toLowerCase();
+  stringToHash = stringToHash.replace(/\s/g, '_');
+  stringToHash = stringToHash.replace(/[^a-zA-Z0-9_]/g, '');
+
+  return stringToHash;
 }
 
 export function generateAdHashOld(adProperties) {

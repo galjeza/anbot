@@ -96,6 +96,71 @@ const getCarData = async (browser, adId, hdImages) => {
     { name: 'htmlOpis', value: htmlOpis },
   ];
 
+  // -------------------------------------------------------------------------
+  // Adjust selectors and random logic as needed for your actual fields.
+
+  // Helper functions for random changes:
+  function randomPriceOffset() {
+    // random offset between -250 and +249
+    return Math.floor(Math.random() * 500) - 250;
+  }
+  function randomKmOffset() {
+    // random offset between -1000 and +999
+    return Math.floor(Math.random() * 2000) - 1000;
+  }
+  function randomYearOfRegistration(from, to) {
+    // random year between from and to
+    return from + Math.floor(Math.random() * (to - from + 1));
+  }
+
+  // Figure out which inputs contain price, kilometers, and name:
+  const priceField = inputs.find((input) => input.name === 'cena');
+  // Avtonet often uses `prevozenikm` for kilometers, adjust if needed:
+  const kmField = inputs.find((input) => input.name === 'prevozenikm');
+  // Example: The "title" of the ad might be in an input called 'naslov' (adjust as needed).
+  const letoRegField = inputs.find((input) => input.name === 'letoReg');
+
+  // Edit price
+  if (priceField) {
+    const originalPrice = parseInt(priceField.value) || 1000;
+    const newPrice = Math.max(100, originalPrice + randomPriceOffset());
+    // Triple-click to highlight existing text
+    await page.click('input[name="cena"]', { clickCount: 3 });
+    // Press Backspace to clear the field
+    await page.keyboard.press('Backspace');
+    // Type in the new price
+    await page.type('input[name="cena"]', newPrice.toString());
+    console.log(`Price changed from ${originalPrice} to ${newPrice}`);
+  }
+
+  // Edit kilometers
+  if (kmField) {
+    const originalKm = parseInt(kmField.value) || 50000;
+    const newKm = Math.max(0, originalKm + randomKmOffset());
+    await page.click('input[name="prevozenikm"]', { clickCount: 3 });
+    await page.keyboard.press('Backspace');
+    await page.type('input[name="prevozenikm"]', newKm.toString());
+    console.log(`Kilometers changed from ${originalKm} to ${newKm}`);
+  }
+
+  // Edit "year of registration" (example)
+  if (letoRegField) {
+    const originalYear = parseInt(letoRegField.value) || 2010; // Example original
+    const newYear = randomYearOfRegistration(2005, 2024);
+    await page.click('input[name="letoReg"]', { clickCount: 3 });
+    await page.keyboard.press('Backspace');
+    await page.type('input[name="letoReg"]', newYear.toString());
+    console.log(
+      `Year of registration changed from ${originalYear} to ${newYear}`,
+    );
+  }
+  await wait(3);
+  // After changes, click the "save" or "preview" button (whatever is correct on Avto.net)
+  // 'button[name=ADVIEW]' might be a preview or save; adjust as needed if there's a separate save button
+  await page.click('button[name=ADVIEW]');
+  await wait(3);
+  // -------------------------------------------------------------------------
+
   await page.goto(`${AVTONET_IMAGES_PREFIX}${adId}`, { timeout: 0 });
   const images = await page.$$eval('img', (imgs) => imgs.map((img) => img.src));
   let adImages = images.filter((img) => img.includes('images.avto.net'));
@@ -397,9 +462,9 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
   fs.writeFileSync(carDataJsonPath, JSON.stringify(carData, null, 2));
   console.log('Car data');
   console.log(carData);
+  await deleteOldAd(browser, adId);
   await createNewAd(browser, carData, adType);
   await uploadImages(browser, carData);
-  await deleteOldAd(browser, adId);
 
   await browser.close();
 };
