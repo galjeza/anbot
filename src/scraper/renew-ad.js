@@ -96,9 +96,6 @@ const getCarData = async (browser, adId, hdImages) => {
     { name: 'htmlOpis', value: htmlOpis },
   ];
 
-  // -------------------------------------------------------------------------
-  // Adjust selectors and random logic as needed for your actual fields.
-
   // Helper functions for random changes:
   function randomPriceOffset() {
     // random offset between -250 and +249
@@ -155,6 +152,43 @@ const getCarData = async (browser, adId, hdImages) => {
     );
   }
   await wait(3);
+
+  // Captca solve
+
+  const captchaElement = await page.$('input[name="ReadTotal"]');
+  if (captchaElement) {
+    const captchaTable = await captchaElement.evaluateHandle((el) => {
+      // Find the closest table ancestor
+      let current = el;
+      while (current && current.tagName !== 'TABLE') {
+        current = current.parentElement;
+      }
+      return current;
+    });
+
+    if (captchaTable) {
+      const captchaText = await captchaTable.evaluate((table) => {
+        const firstParagraph = table.querySelector('p');
+        return firstParagraph ? firstParagraph.textContent : null;
+      });
+
+      if (captchaText) {
+        const numbers = captchaText.match(/\d+/g);
+        if (numbers && numbers.length === 2) {
+          const sum = parseInt(numbers[0]) + parseInt(numbers[1]);
+          console.log(
+            `Solving captcha: ${numbers[0]} + ${numbers[1]} = ${sum}`,
+          );
+
+          // Add some random pauses to make it look more human-like
+          await wait(Math.random() * 2 + 1);
+          await page.type('input[name="ReadTotal"]', sum.toString());
+          await wait(Math.random() * 1.5 + 0.5);
+        }
+      }
+    }
+  }
+
   // After changes, click the "save" or "preview" button (whatever is correct on Avto.net)
   // 'button[name=ADVIEW]' might be a preview or save; adjust as needed if there's a separate save button
   await page.click('button[name=ADVIEW]');
@@ -462,9 +496,10 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
   fs.writeFileSync(carDataJsonPath, JSON.stringify(carData, null, 2));
   console.log('Car data');
   console.log(carData);
-  await deleteOldAd(browser, adId);
+
   await createNewAd(browser, carData, adType);
   await uploadImages(browser, carData);
+  await deleteOldAd(browser, adId);
 
   await browser.close();
 };
