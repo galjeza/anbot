@@ -103,7 +103,6 @@ const Menu = () => {
           <div className="flex items-center mb-3">
             {/*<KeyIcon className="h-6 w-6 text-gray-400 mr-2" /> */}
             <span>Geslo: {user.password}</span>{' '}
-            {/* Consider hashing or securing the password */}
           </div>
           <div className="flex items-center mb-3">
             {/* <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
