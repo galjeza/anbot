@@ -18,6 +18,50 @@ import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from './utils/constants.js';
 import { fileURLToPath } from 'url';
 import { humanDelay } from './utils/waiting.js';
 
+const solveCaptcha = async (page) => {
+  const captchaElement = await page.$('input[name="ReadTotal"]');
+  if (captchaElement) {
+    console.log('Captcha element found');
+  } else {
+    console.log('No captcha element found');
+  }
+  const tables = await page.$$('table');
+  const secondLastTable = tables[tables.length - 2];
+  const captchaText = await secondLastTable.evaluate((table) => {
+    const firstParagraph = table.querySelector('p');
+    return firstParagraph ? firstParagraph.textContent : null;
+  });
+  console.log('Captcha text:', captchaText);
+  if (captchaText) {
+    const captchaNumbers = captchaText.match(/\d+/g);
+    if (captchaNumbers && captchaNumbers.length === 2) {
+      const sum = parseInt(captchaNumbers[0]) + parseInt(captchaNumbers[1]);
+      console.log(
+        `Solving captcha: ${captchaNumbers[0]} + ${captchaNumbers[1]} = ${sum}`,
+      );
+
+      // Click and clear field with human-like timing
+      await page.click('input[name="ReadTotal"]', { clickCount: 3 });
+      await wait(2);
+      await page.keyboard.press('Backspace');
+      await wait(2);
+
+      // Type sum with human-like delays between digits
+      const sumStr = sum.toString();
+      for (let i = 0; i < sumStr.length; i++) {
+        await page.type('input[name="ReadTotal"]', sumStr[i], {
+          delay: 150,
+        });
+        await wait(2);
+      }
+
+      await wait(12);
+    }
+  } else {
+    console.log('No captcha element found');
+  }
+};
+
 const loginToAvtonet = async (browser, email, password) => {
   const [page] = await browser.pages();
   await page.goto('https://www.avto.net/_2016mojavtonet/', { timeout: 0 });
@@ -37,6 +81,8 @@ const loginToAvtonet = async (browser, email, password) => {
     { timeout: 0 },
   );
   console.log('Logged in');
+
+  await wait(30);
 };
 
 const getCarData = async (browser, adId, hdImages) => {
@@ -96,26 +142,13 @@ const getCarData = async (browser, adId, hdImages) => {
     { name: 'htmlOpis', value: htmlOpis },
   ];
 
-  // Helper functions for random changes:
   function randomPriceOffset() {
-    // random offset between -250 and +249
-    return Math.floor(Math.random() * 500) - 250;
-  }
-  function randomKmOffset() {
-    // random offset between -1000 and +999
-    return Math.floor(Math.random() * 2000) - 1000;
-  }
-  function randomYearOfRegistration(from, to) {
-    // random year between from and to
-    return from + Math.floor(Math.random() * (to - from + 1));
+    // random offset between -50 and + 50
+    return Math.floor(Math.random() * 100) - 50;
   }
 
   // Figure out which inputs contain price, kilometers, and name:
   const priceField = inputs.find((input) => input.name === 'cena');
-  // Avtonet often uses `prevozenikm` for kilometers, adjust if needed:
-  const kmField = inputs.find((input) => input.name === 'prevozenikm');
-  // Example: The "title" of the ad might be in an input called 'naslov' (adjust as needed).
-  const letoRegField = inputs.find((input) => input.name === 'letoReg');
 
   // Edit price
   if (priceField) {
@@ -130,64 +163,9 @@ const getCarData = async (browser, adId, hdImages) => {
     console.log(`Price changed from ${originalPrice} to ${newPrice}`);
   }
 
-  // Edit kilometers
-  if (kmField) {
-    const originalKm = parseInt(kmField.value) || 50000;
-    const newKm = Math.max(0, originalKm + randomKmOffset());
-    await page.click('input[name="prevozenikm"]', { clickCount: 3 });
-    await page.keyboard.press('Backspace');
-    await page.type('input[name="prevozenikm"]', newKm.toString());
-    console.log(`Kilometers changed from ${originalKm} to ${newKm}`);
-  }
-
-  // Edit "year of registration" (example)
-  if (letoRegField) {
-    const originalYear = parseInt(letoRegField.value) || 2010; // Example original
-    const newYear = randomYearOfRegistration(2005, 2024);
-    await page.click('input[name="letoReg"]', { clickCount: 3 });
-    await page.keyboard.press('Backspace');
-    await page.type('input[name="letoReg"]', newYear.toString());
-    console.log(
-      `Year of registration changed from ${originalYear} to ${newYear}`,
-    );
-  }
   await wait(3);
 
-  // Captca solve
-
-  const captchaElement = await page.$('input[name="ReadTotal"]');
-  if (captchaElement) {
-    const captchaTable = await captchaElement.evaluateHandle((el) => {
-      // Find the closest table ancestor
-      let current = el;
-      while (current && current.tagName !== 'TABLE') {
-        current = current.parentElement;
-      }
-      return current;
-    });
-
-    if (captchaTable) {
-      const captchaText = await captchaTable.evaluate((table) => {
-        const firstParagraph = table.querySelector('p');
-        return firstParagraph ? firstParagraph.textContent : null;
-      });
-
-      if (captchaText) {
-        const numbers = captchaText.match(/\d+/g);
-        if (numbers && numbers.length === 2) {
-          const sum = parseInt(numbers[0]) + parseInt(numbers[1]);
-          console.log(
-            `Solving captcha: ${numbers[0]} + ${numbers[1]} = ${sum}`,
-          );
-
-          // Add some random pauses to make it look more human-like
-          await wait(Math.random() * 2 + 1);
-          await page.type('input[name="ReadTotal"]', sum.toString());
-          await wait(Math.random() * 1.5 + 0.5);
-        }
-      }
-    }
-  }
+  await solveCaptcha(page);
 
   // After changes, click the "save" or "preview" button (whatever is correct on Avto.net)
   // 'button[name=ADVIEW]' might be a preview or save; adjust as needed if there's a separate save button
@@ -203,6 +181,7 @@ const getCarData = async (browser, adId, hdImages) => {
     console.log('HD Images downloading');
     adImages = adImages.map((img) => img.replace('.jpg', '_HD.jpg'));
   }
+
   carData.push({ name: 'images', value: adImages });
 
   const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
@@ -412,6 +391,8 @@ const createNewAd = async (browser, carData, adType) => {
       }
     }
 
+    await solveCaptcha(page);
+
     await wait(2);
     await page.click('button[name="EDITAD"]');
   } catch (e) {
@@ -496,10 +477,9 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
   fs.writeFileSync(carDataJsonPath, JSON.stringify(carData, null, 2));
   console.log('Car data');
   console.log(carData);
-
+  await deleteOldAd(browser, adId);
   await createNewAd(browser, carData, adType);
   await uploadImages(browser, carData);
-  await deleteOldAd(browser, adId);
 
   await browser.close();
 };

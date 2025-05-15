@@ -111,11 +111,13 @@ export function generateAdHash(adProperties) {
 }
 
 export async function downloadImage(url, outputPath) {
+  console.log('Image url, outputPath', url, outputPath);
   try {
     const response = await axios({
       method: 'GET',
       url: url,
-      responseType: 'stream',
+      responseType: 'arraybuffer',
+      timeout: 60000, // 60 seconds timeout
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
@@ -123,15 +125,7 @@ export async function downloadImage(url, outputPath) {
         // 'Referrer': 'https://your-referrer-site.com'
       },
     });
-
-    const writer = fs.createWriteStream(outputPath);
-
-    response.data.pipe(writer);
-
-    return new Promise((resolve, reject) => {
-      writer.on('finish', resolve);
-      writer.on('error', reject);
-    });
+    fs.writeFileSync(outputPath, response.data);
   } catch (error) {
     console.error(
       'An error occurred while downloading the image:',

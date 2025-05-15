@@ -90,7 +90,10 @@ const Menu = () => {
   );
 
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-gray-900">
+    <div className="flex items-center flex-col justify-center w-screen h-screen bg-gray-900">
+      <h1 className="text-red-400 text-2xl font-bold mb-4">
+        Opozorilo: Ne obnavljajte oglasov ki nimajo objavljene VIN!
+      </h1>
       <div className="max-w-sm w-full bg-gray-800 text-gray-200 shadow-md rounded-lg overflow-hidden">
         <div className="p-5">
           <div className="flex items-center mb-3">
