@@ -221,28 +221,27 @@ const createNewAd = async (browser, carData, adType) => {
       (options) => options.map((option) => option.value),
     );
 
-    if (
-      !znamkaOptionsValues.includes(
-        (carData.find((data) => data.name === 'znamka') || {}).value,
-      )
-    ) {
-      const znamkaFound = carData.find((data) => data.name === 'znamka');
-      if (!znamkaFound) {
-        console.log('[WARN] znamka not found in carData:', carData);
+    const znamkaValue = (() => {
+      if (adType === 'dostavna') {
+        const found = carData.find((data) => data.name === 'znamkaTEMP');
+        if (!found) {
+          console.log('[WARN] znamkaTEMP not found in carData:', carData);
+        }
+        return found ? found.value : '';
+      } else {
+        const found = carData.find((data) => data.name === 'znamka');
+        if (!found) {
+          console.log('[WARN] znamka not found in carData:', carData);
+        }
+        return found ? found.value : '';
       }
-      const znamkaWithoutSpaces = (
-        znamkaFound ? znamkaFound.value : ''
-      ).replaceAll(' ', '');
+    })();
+
+    if (!znamkaOptionsValues.includes(znamkaValue)) {
+      const znamkaWithoutSpaces = znamkaValue.replaceAll(' ', '');
       await page.select('select[name=znamka]', znamkaWithoutSpaces);
     } else {
-      const znamkaFound = carData.find((data) => data.name === 'znamka');
-      if (!znamkaFound) {
-        console.log('[WARN] znamka not found in carData:', carData);
-      }
-      await page.select(
-        'select[name=znamka]',
-        znamkaFound ? znamkaFound.value : '',
-      );
+      await page.select('select[name=znamka]', znamkaValue);
     }
 
     await randomWait(1, 2);
@@ -474,12 +473,14 @@ const uploadImages = async (browser, carData) => {
         .then((pages) => pages[pages.length - 1]);
 
       // Wait for navigation to complete
-      await imagesUploadPage.waitForNavigation({ timeout: 30000 }).catch(() => {});
+      await imagesUploadPage
+        .waitForNavigation({ timeout: 30000 })
+        .catch(() => {});
 
       // Check if we're on the correct page by looking for multiple possible selectors
       const selectors = ['.mojtrg', '.ButtonAddPhoto', 'input[type=file]'];
       let foundSelector = false;
-      
+
       for (const selector of selectors) {
         const element = await imagesUploadPage.$(selector);
         if (element) {
@@ -500,7 +501,8 @@ const uploadImages = async (browser, carData) => {
         await wait(2);
       }
 
-      const numImages = carData.find((data) => data.name === 'images').value.length;
+      const numImages = carData.find((data) => data.name === 'images').value
+        .length;
 
       for (let i = 0; i < numImages; i++) {
         await wait(3);
@@ -509,11 +511,11 @@ const uploadImages = async (browser, carData) => {
           .then((pages) => pages[pages.length - 1]);
 
         console.log('Uploading image', i + 1, 'of', numImages);
-        
+
         // Wait for file input with increased timeout
         await imagesUploadPage.waitForSelector('input[type=file]', {
           timeout: 30000,
-          visible: true
+          visible: true,
         });
 
         const fileInput = await imagesUploadPage.$('input[type=file]');
@@ -541,15 +543,16 @@ const uploadImages = async (browser, carData) => {
 
       // If we get here without errors, break the retry loop
       break;
-
     } catch (error) {
       console.log(`Attempt ${retryCount + 1} failed:`, error.message);
       retryCount++;
-      
+
       if (retryCount === maxRetries) {
-        throw new Error(`Failed to upload images after ${maxRetries} attempts: ${error.message}`);
+        throw new Error(
+          `Failed to upload images after ${maxRetries} attempts: ${error.message}`,
+        );
       }
-      
+
       // Wait before retrying
       await wait(5);
     }
