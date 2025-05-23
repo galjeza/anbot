@@ -230,17 +230,25 @@ const createNewAd = async (browser, carData, adType) => {
 
     if (
       !znamkaOptionsValues.includes(
-        carData.find((data) => data.name === 'znamka').value,
+        (carData.find((data) => data.name === 'znamka') || {}).value,
       )
     ) {
-      const znamkaWithoutSpaces = carData
-        .find((data) => data.name === 'znamka')
-        .value.replaceAll(' ', '');
+      const znamkaFound = carData.find((data) => data.name === 'znamka');
+      if (!znamkaFound) {
+        console.log('[WARN] znamka not found in carData:', carData);
+      }
+      const znamkaWithoutSpaces = (
+        znamkaFound ? znamkaFound.value : ''
+      ).replaceAll(' ', '');
       await page.select('select[name=znamka]', znamkaWithoutSpaces);
     } else {
+      const znamkaFound = carData.find((data) => data.name === 'znamka');
+      if (!znamkaFound) {
+        console.log('[WARN] znamka not found in carData:', carData);
+      }
       await page.select(
         'select[name=znamka]',
-        carData.find((data) => data.name === 'znamka').value,
+        znamkaFound ? znamkaFound.value : '',
       );
     }
 
@@ -254,24 +262,35 @@ const createNewAd = async (browser, carData, adType) => {
     const carModel = (() => {
       console.log('adType in carmodel', adType);
       if (adType === 'dostavna') {
-        return carData.find((data) => data.name === 'modelTEMP').value;
+        const found = carData.find((data) => data.name === 'modelTEMP');
+        if (!found)
+          console.log('[WARN] modelTEMP not found in carData:', carData);
+        return found ? found.value : '';
       } else {
-        return carData.find((data) => data.name === 'model').value;
+        const found = carData.find((data) => data.name === 'model');
+        if (!found) console.log('[WARN] model not found in carData:', carData);
+        return found ? found.value : '';
       }
     })();
     if (modelOptionsValues.includes(carModel)) {
       await page.select('select[name=model]', carModel);
     } else {
-      const weirdName = carData
-        .find((data) => data.name === 'model')
-        .value.replace(' ', '---');
+      const modelFound = carData.find((data) => data.name === 'model');
+      if (!modelFound) {
+        console.log('[WARN] model not found in carData:', carData);
+      }
+      const weirdName = modelFound ? modelFound.value.replace(' ', '---') : '';
       console.log('weirdName', weirdName);
       await page.select('select[name=model]', weirdName);
     }
 
+    const oblikaFound = carData.find((data) => data.name === 'oblika');
+    if (!oblikaFound) {
+      console.log('[WARN] oblika not found in carData:', carData);
+    }
     await page.select(
       'select[name=oblika]',
-      carData.find((data) => data.name === 'oblika').value,
+      oblikaFound ? oblikaFound.value : '',
     );
 
     await randomWait(5);
@@ -280,18 +299,32 @@ const createNewAd = async (browser, carData, adType) => {
 
     await wait(5);
     try {
+      const letoRegFound = carData.find((data) => data.name === 'letoReg');
+      if (!letoRegFound) {
+        console.log('[WARN] letoReg not found in carData:', carData);
+      }
       await page.select(
         'select[name="leto"]',
-        carData.find((data) => data.name === 'letoReg').value,
+        letoRegFound ? letoRegFound.value : '',
       );
     } catch (e) {
-      console.log(carData.find((data) => data.name === 'letoReg').value);
+      const letoRegFound = carData.find((data) => data.name === 'letoReg');
+      console.log(
+        letoRegFound
+          ? letoRegFound.value
+          : '[WARN] letoReg not found in carData:',
+        carData,
+      );
       console.log(e);
       await page.select('select[name="leto"]', 'NOVO vozilo');
     }
     await wait(3);
 
-    const gasType = carData.find((data) => data.name === 'gorivo').value;
+    const gorivoFound = carData.find((data) => data.name === 'gorivo');
+    if (!gorivoFound) {
+      console.log('[WARN] gorivo not found in carData:', carData);
+    }
+    const gasType = gorivoFound ? gorivoFound.value : '';
     const fixedGasType = fixGasType(gasType);
     console.log('fixedGasType', fixedGasType);
 
@@ -322,9 +355,13 @@ const createNewAd = async (browser, carData, adType) => {
       console.log('frameElement found');
       const frame = await frameElement.contentFrame();
       const frameBody = await frame.$('body');
+      const htmlOpisFound = carData.find((data) => data.name === 'htmlOpis');
+      if (!htmlOpisFound) {
+        console.log('[WARN] htmlOpis not found in carData:', carData);
+      }
       await frameBody.evaluate(
         (frameBody, htmlOpis) => (frameBody.innerHTML = htmlOpis),
-        carData.find((data) => data.name === 'htmlOpis').value,
+        htmlOpisFound ? htmlOpisFound.value : '',
       );
       console.log('GOT to #2');
       await wait(2);
@@ -337,7 +374,14 @@ const createNewAd = async (browser, carData, adType) => {
     const checkboxes = await page.$$('input[type=checkbox]');
     for (const checkbox of checkboxes) {
       const name = await checkbox.evaluate((node) => node.name);
-      const value = carData.find((data) => data.name === name).value;
+      const found = carData.find((data) => data.name === name);
+      if (!found) {
+        console.log(
+          `[WARN] Checkbox with name '${name}' not found in carData`,
+          carData,
+        );
+      }
+      const value = found ? found.value : undefined;
       if (value === '1') {
         await checkbox.click();
       }
@@ -348,7 +392,14 @@ const createNewAd = async (browser, carData, adType) => {
     for (const input of inputs) {
       try {
         const name = await input.evaluate((node) => node.name);
-        const value = carData.find((data) => data.name === name).value;
+        const found = carData.find((data) => data.name === name);
+        if (!found) {
+          console.log(
+            `[WARN] Input with name '${name}' not found in carData`,
+            carData,
+          );
+        }
+        const value = found ? found.value : undefined;
         if (value) {
           await input.click({ clickCount: 3 });
           await input.type(value);
@@ -362,7 +413,14 @@ const createNewAd = async (browser, carData, adType) => {
     for (const select of selects) {
       try {
         const name = await select.evaluate((node) => node.name);
-        const value = carData.find((data) => data.name === name).value;
+        const found = carData.find((data) => data.name === name);
+        if (!found) {
+          console.log(
+            `[WARN] Select with name '${name}' not found in carData`,
+            carData,
+          );
+        }
+        const value = found ? found.value : undefined;
         if (value) {
           await select.select(value);
         }
@@ -375,7 +433,14 @@ const createNewAd = async (browser, carData, adType) => {
     for (const textarea of textareas) {
       try {
         const name = await textarea.evaluate((node) => node.name);
-        const value = carData.find((data) => data.name === name).value;
+        const found = carData.find((data) => data.name === name);
+        if (!found) {
+          console.log(
+            `[WARN] Textarea with name '${name}' not found in carData`,
+            carData,
+          );
+        }
+        const value = found ? found.value : undefined;
         if (value) {
           await textarea.click({ clickCount: 3 });
           await textarea.type(value);
@@ -386,7 +451,11 @@ const createNewAd = async (browser, carData, adType) => {
     }
 
     if (adType === 'car') {
-      if (carData.find((data) => data.name === 'VINobjavi').value === '1') {
+      const vinObjaviFound = carData.find((data) => data.name === 'VINobjavi');
+      if (!vinObjaviFound) {
+        console.log('[WARN] VINobjavi not found in carData:', carData);
+      }
+      if (vinObjaviFound && vinObjaviFound.value === '1') {
         await page.click('#VINobjavi');
       }
     }
