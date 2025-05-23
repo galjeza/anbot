@@ -143,22 +143,17 @@ const getCarData = async (browser, adId, hdImages) => {
   ];
 
   function randomPriceOffset() {
-    // random offset between -50 and + 50
-    return Math.floor(Math.random() * 100) - 50;
+    const offset = Math.floor(Math.random() * 50) + 1;
+    return Math.random() < 0.5 ? -offset : offset;
   }
 
-  // Figure out which inputs contain price, kilometers, and name:
   const priceField = inputs.find((input) => input.name === 'cena');
 
-  // Edit price
   if (priceField) {
     const originalPrice = parseInt(priceField.value) || 1000;
     const newPrice = Math.max(100, originalPrice + randomPriceOffset());
-    // Triple-click to highlight existing text
     await page.click('input[name="cena"]', { clickCount: 3 });
-    // Press Backspace to clear the field
     await page.keyboard.press('Backspace');
-    // Type in the new price
     await page.type('input[name="cena"]', newPrice.toString());
     console.log(`Price changed from ${originalPrice} to ${newPrice}`);
   }
@@ -167,8 +162,6 @@ const getCarData = async (browser, adId, hdImages) => {
 
   await solveCaptcha(page);
 
-  // After changes, click the "save" or "preview" button (whatever is correct on Avto.net)
-  // 'button[name=ADVIEW]' might be a preview or save; adjust as needed if there's a separate save button
   await page.click('button[name=ADVIEW]');
   await wait(3);
   // -------------------------------------------------------------------------
@@ -470,60 +463,95 @@ const createNewAd = async (browser, carData, adType) => {
   }
 };
 const uploadImages = async (browser, carData) => {
-  const userDataPath = app.getPath('userData'); // Get path to user data directory
-  let imagesUploadPage = await browser
-    .pages()
-    .then((pages) => pages[pages.length - 1]);
+  const userDataPath = app.getPath('userData');
+  const maxRetries = 3;
+  let retryCount = 0;
 
-  await imagesUploadPage.waitForSelector('.mojtrg', {
-    timeout: 0,
-  });
-  await randomWait(2, 3);
+  while (retryCount < maxRetries) {
+    try {
+      let imagesUploadPage = await browser
+        .pages()
+        .then((pages) => pages[pages.length - 1]);
 
-  const infoIcon = await imagesUploadPage.$('.fa.fa-info-circle.fa-lg');
-  if (infoIcon) {
-    await imagesUploadPage.click('.fa.fa-info-circle.fa-lg');
-    await wait(2);
-  }
+      // Wait for navigation to complete
+      await imagesUploadPage.waitForNavigation({ timeout: 30000 }).catch(() => {});
 
-  await imagesUploadPage.waitForSelector('.ButtonAddPhoto', {
-    timeout: 0,
-  });
-  await randomWait(2, 3);
-  const numImages = carData.find((data) => data.name === 'images').value.length;
+      // Check if we're on the correct page by looking for multiple possible selectors
+      const selectors = ['.mojtrg', '.ButtonAddPhoto', 'input[type=file]'];
+      let foundSelector = false;
+      
+      for (const selector of selectors) {
+        const element = await imagesUploadPage.$(selector);
+        if (element) {
+          foundSelector = true;
+          break;
+        }
+      }
 
-  for (let i = 0; i < numImages; i++) {
-    await wait(3);
-    imagesUploadPage = await browser
-      .pages()
-      .then((pages) => pages[pages.length - 1]);
-    console.log('Uploading image', i + 1, 'of', numImages);
-    await imagesUploadPage.waitForSelector('input[type=file]', {
-      timeout: 0,
-    });
-    await imagesUploadPage.click('input[type=file]');
-    await wait(2);
+      if (!foundSelector) {
+        throw new Error('Not on the correct page for image upload');
+      }
 
-    const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
+      await randomWait(2, 3);
 
-    const imagePath = path.join(adImagesDirectory, `${i}.jpg`); // Construct the path to the image
-    if (!fs.existsSync(imagePath)) {
-      console.log(`Image file ${imagePath} does not exist.`);
-      continue;
-    }
+      const infoIcon = await imagesUploadPage.$('.fa.fa-info-circle.fa-lg');
+      if (infoIcon) {
+        await infoIcon.click().catch(() => {});
+        await wait(2);
+      }
 
-    await imagesUploadPage.waitForSelector('input[type=file]', {
-      timeout: 0,
-    });
+      const numImages = carData.find((data) => data.name === 'images').value.length;
 
-    const imageInput = await imagesUploadPage.$('input[type=file]');
-    await imageInput.uploadFile(imagePath);
-    await wait(2);
+      for (let i = 0; i < numImages; i++) {
+        await wait(3);
+        imagesUploadPage = await browser
+          .pages()
+          .then((pages) => pages[pages.length - 1]);
 
-    const addPhotoButtons = await imagesUploadPage.$$('.ButtonAddPhoto');
-    if (addPhotoButtons.length > 0) {
-      await addPhotoButtons[0].click();
-      await wait(4);
+        console.log('Uploading image', i + 1, 'of', numImages);
+        
+        // Wait for file input with increased timeout
+        await imagesUploadPage.waitForSelector('input[type=file]', {
+          timeout: 30000,
+          visible: true
+        });
+
+        const fileInput = await imagesUploadPage.$('input[type=file]');
+        if (!fileInput) {
+          throw new Error('File input not found');
+        }
+
+        const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
+        const imagePath = path.join(adImagesDirectory, `${i}.jpg`);
+
+        if (!fs.existsSync(imagePath)) {
+          console.log(`Image file ${imagePath} does not exist.`);
+          continue;
+        }
+
+        await fileInput.uploadFile(imagePath);
+        await wait(2);
+
+        const addPhotoButtons = await imagesUploadPage.$$('.ButtonAddPhoto');
+        if (addPhotoButtons.length > 0) {
+          await addPhotoButtons[0].click().catch(() => {});
+          await wait(4);
+        }
+      }
+
+      // If we get here without errors, break the retry loop
+      break;
+
+    } catch (error) {
+      console.log(`Attempt ${retryCount + 1} failed:`, error.message);
+      retryCount++;
+      
+      if (retryCount === maxRetries) {
+        throw new Error(`Failed to upload images after ${maxRetries} attempts: ${error.message}`);
+      }
+      
+      // Wait before retrying
+      await wait(5);
     }
   }
 };
