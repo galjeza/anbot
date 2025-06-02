@@ -13,33 +13,73 @@ export async function saveList(list, filename) {
 
 // Example function to get the ad images directory path
 export function getAdImagesDirectory(carData, userDataPath) {
-  const newHash = generateAdHash(carData); // Generate hash without price
-  const oldHash = generateAdHashOld(carData); // Assume this function generates a hash with the price included, similar to your original function
-  const brandNewHash = generateAdHashBrandNew(carData); // Assume this function generates a hash without the price, similar to your original function
+  const simpleHash = generateAdHashSimple(carData);
+  const legacyV3Hash = generateAdHashLegacyV3(carData);
+  const legacyV2Hash = generateAdHashLegacyV2(carData);
+  const legacyV1Hash = generateAdHashLegacyV1(carData);
 
-  // Construct directory paths for both old and new hashes
-  const newAdImagesDirectory = path.join(userDataPath, 'AdImages', newHash);
-  const oldAdImagesDirectory = path.join(userDataPath, 'AdImages', oldHash);
-  const brandNewAdImagesDirectory = path.join(
+  // Construct directory paths for all hash versions
+  const simpleAdImagesDirectory = path.join(
     userDataPath,
     'AdImages',
-    brandNewHash,
+    simpleHash,
+  );
+  const legacyV3AdImagesDirectory = path.join(
+    userDataPath,
+    'AdImages',
+    legacyV3Hash,
+  );
+  const legacyV2AdImagesDirectory = path.join(
+    userDataPath,
+    'AdImages',
+    legacyV2Hash,
+  );
+  const legacyV1AdImagesDirectory = path.join(
+    userDataPath,
+    'AdImages',
+    legacyV1Hash,
   );
 
-  // Check if the directory with the old hash exists
-  if (fs.existsSync(oldAdImagesDirectory)) {
-    console.log('Old hash directory exists:', oldAdImagesDirectory);
-    return oldAdImagesDirectory;
+  // Check directories in order of preference
+  if (fs.existsSync(simpleAdImagesDirectory)) {
+    console.log('Simple hash directory exists:', simpleAdImagesDirectory);
+    return simpleAdImagesDirectory;
   }
-  if (fs.existsSync(newAdImagesDirectory)) {
-    console.log('Brand new hash directory exists:', brandNewAdImagesDirectory);
-    return newAdImagesDirectory;
+  if (fs.existsSync(legacyV3AdImagesDirectory)) {
+    console.log('Legacy V3 hash directory exists:', legacyV3AdImagesDirectory);
+    return legacyV3AdImagesDirectory;
   }
-  console.log('New hash directory exists:', brandNewAdImagesDirectory);
-  return brandNewAdImagesDirectory;
+  if (fs.existsSync(legacyV2AdImagesDirectory)) {
+    console.log('Legacy V2 hash directory exists:', legacyV2AdImagesDirectory);
+    return legacyV2AdImagesDirectory;
+  }
+  if (fs.existsSync(legacyV1AdImagesDirectory)) {
+    console.log('Legacy V1 hash directory exists:', legacyV1AdImagesDirectory);
+    return legacyV1AdImagesDirectory;
+  }
+
+  // If no existing directory is found, use the new simple hash
+  return simpleAdImagesDirectory;
 }
 
-export function generateAdHashBrandNew(adProperties) {
+export function generateAdHashSimple(adProperties) {
+  const relevantProperties = ['znamkavozila', 'modelvozila', 'letoReg'];
+  let stringToHash = '';
+
+  adProperties.forEach((prop) => {
+    if (relevantProperties.includes(prop.name)) {
+      stringToHash += prop.value;
+    }
+  });
+
+  stringToHash = stringToHash.toLowerCase();
+  stringToHash = stringToHash.replace(/\s/g, '_');
+  stringToHash = stringToHash.replace(/[^a-zA-Z0-9_]/g, '');
+
+  return stringToHash;
+}
+
+export function generateAdHashLegacyV3(adProperties) {
   const relevantProperties = [
     'znamkavozila',
     'modelvozila',
@@ -61,7 +101,7 @@ export function generateAdHashBrandNew(adProperties) {
   return stringToHash;
 }
 
-export function generateAdHashOld(adProperties) {
+export function generateAdHashLegacyV2(adProperties) {
   const relevantProperties = [
     'znamkavozila',
     'modelvozila',
@@ -85,15 +125,13 @@ export function generateAdHashOld(adProperties) {
   return stringToHash;
 }
 
-export function generateAdHash(adProperties) {
-  // Define properties relevant for hash calculation, excluding 'cena'
+export function generateAdHashLegacyV1(adProperties) {
   const relevantProperties = [
     'znamkavozila',
     'modelvozila',
     'prevozenikm',
     'tipvozila',
     'letoReg',
-    // 'cena', // Excluded from the hash calculation
   ];
   let stringToHash = '';
 

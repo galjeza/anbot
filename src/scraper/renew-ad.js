@@ -6,7 +6,6 @@ import { reduceSharpnessDesaturateAndBlurEdges } from './utils/utils.js';
 
 import { setupBrowser } from './utils/browser-utils.js';
 import {
-  saveList,
   getAdImagesDirectory,
   downloadImage,
   wait,
@@ -15,7 +14,6 @@ import {
 
 import { fixGasType } from './utils/avtonetutils.js';
 import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from './utils/constants.js';
-import { fileURLToPath } from 'url';
 import { humanDelay } from './utils/waiting.js';
 
 const solveCaptcha = async (page) => {
@@ -147,7 +145,16 @@ const getCarData = async (browser, adId, hdImages) => {
     return Math.random() < 0.5 ? -offset : offset;
   }
 
+  function randomRegistrationYear() {
+    const currentYear = new Date().getFullYear();
+    const minYear = currentYear - 20; // Let's set a reasonable minimum year
+    const randomYear =
+      Math.floor(Math.random() * (currentYear - minYear + 1)) + minYear;
+    return randomYear.toString();
+  }
+
   const priceField = inputs.find((input) => input.name === 'cena');
+  const letoRegField = carData.find((data) => data.name === 'letoReg');
 
   if (priceField) {
     const originalPrice = parseInt(priceField.value) || 1000;
@@ -156,6 +163,13 @@ const getCarData = async (browser, adId, hdImages) => {
     await page.keyboard.press('Backspace');
     await page.type('input[name="cena"]', newPrice.toString());
     console.log(`Price changed from ${originalPrice} to ${newPrice}`);
+  }
+
+  if (letoRegField) {
+    const originalYear = letoRegField.value;
+    const newYear = randomRegistrationYear();
+    letoRegField.value = newYear;
+    console.log(`Registration year changed from ${originalYear} to ${newYear}`);
   }
 
   await wait(3);
@@ -405,12 +419,14 @@ const uploadImages = async (browser, carData) => {
         .then((pages) => pages[pages.length - 1]);
 
       // Wait for navigation to complete
-      await imagesUploadPage.waitForNavigation({ timeout: 30000 }).catch(() => {});
+      await imagesUploadPage
+        .waitForNavigation({ timeout: 30000 })
+        .catch(() => {});
 
       // Check if we're on the correct page by looking for multiple possible selectors
       const selectors = ['.mojtrg', '.ButtonAddPhoto', 'input[type=file]'];
       let foundSelector = false;
-      
+
       for (const selector of selectors) {
         const element = await imagesUploadPage.$(selector);
         if (element) {
@@ -431,7 +447,8 @@ const uploadImages = async (browser, carData) => {
         await wait(2);
       }
 
-      const numImages = carData.find((data) => data.name === 'images').value.length;
+      const numImages = carData.find((data) => data.name === 'images').value
+        .length;
 
       for (let i = 0; i < numImages; i++) {
         await wait(3);
@@ -440,11 +457,11 @@ const uploadImages = async (browser, carData) => {
           .then((pages) => pages[pages.length - 1]);
 
         console.log('Uploading image', i + 1, 'of', numImages);
-        
+
         // Wait for file input with increased timeout
         await imagesUploadPage.waitForSelector('input[type=file]', {
           timeout: 30000,
-          visible: true
+          visible: true,
         });
 
         const fileInput = await imagesUploadPage.$('input[type=file]');
@@ -472,15 +489,16 @@ const uploadImages = async (browser, carData) => {
 
       // If we get here without errors, break the retry loop
       break;
-
     } catch (error) {
       console.log(`Attempt ${retryCount + 1} failed:`, error.message);
       retryCount++;
-      
+
       if (retryCount === maxRetries) {
-        throw new Error(`Failed to upload images after ${maxRetries} attempts: ${error.message}`);
+        throw new Error(
+          `Failed to upload images after ${maxRetries} attempts: ${error.message}`,
+        );
       }
-      
+
       // Wait before retrying
       await wait(5);
     }
