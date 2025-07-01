@@ -11,8 +11,21 @@ export async function saveList(list, filename) {
   });
 }
 
-// Example function to get the ad images directory path
 export function getAdImagesDirectory(carData, userDataPath) {
+  const relevantFields = [
+    'znamkavozila',
+    'modelvozila',
+    'prevozenikm',
+    'tipvozila',
+    'letoReg',
+    'cena',
+  ];
+  console.log('Relevant fields for hash generation:');
+  relevantFields.forEach((field) => {
+    const fieldData = carData.find((data) => data.name === field);
+    console.log(`${field}: ${fieldData ? fieldData.value : 'not found'}`);
+  });
+
   const simpleHash = generateAdHashSimple(carData);
   const legacyV3Hash = generateAdHashLegacyV3(carData);
   const legacyV2Hash = generateAdHashLegacyV2(carData);
@@ -40,11 +53,7 @@ export function getAdImagesDirectory(carData, userDataPath) {
     legacyV1Hash,
   );
 
-  // Check directories in order of preference
-  if (fs.existsSync(simpleAdImagesDirectory)) {
-    console.log('Simple hash directory exists:', simpleAdImagesDirectory);
-    return simpleAdImagesDirectory;
-  }
+  // First check if any legacy directories exist
   if (fs.existsSync(legacyV3AdImagesDirectory)) {
     console.log('Legacy V3 hash directory exists:', legacyV3AdImagesDirectory);
     return legacyV3AdImagesDirectory;
@@ -58,8 +67,14 @@ export function getAdImagesDirectory(carData, userDataPath) {
     return legacyV1AdImagesDirectory;
   }
 
-  // If no existing directory is found, use the new simple hash
-  return simpleAdImagesDirectory;
+  // Only if no legacy directories exist, check for or create simple hash directory
+  if (fs.existsSync(simpleAdImagesDirectory)) {
+    console.log('Simple hash directory exists:', simpleAdImagesDirectory);
+    return simpleAdImagesDirectory;
+  }
+
+  // If no directories exist at all, use legacy V3 format for consistency
+  return legacyV3AdImagesDirectory;
 }
 
 export function generateAdHashSimple(adProperties) {

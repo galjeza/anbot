@@ -80,7 +80,7 @@ const loginToAvtonet = async (browser, email, password) => {
   );
   console.log('Logged in');
 
-  await wait(30);
+  await wait(10);
 };
 
 const getCarData = async (browser, adId, hdImages) => {
@@ -168,7 +168,9 @@ const getCarData = async (browser, adId, hdImages) => {
   if (letoRegField) {
     const originalYear = letoRegField.value;
     const newYear = randomRegistrationYear();
-    letoRegField.value = newYear;
+    await page.click('input[name="letoReg"]', { clickCount: 3 });
+    await page.keyboard.press('Backspace');
+    await page.type('input[name="letoReg"]', newYear);
     console.log(`Registration year changed from ${originalYear} to ${newYear}`);
   }
 
@@ -447,16 +449,26 @@ const uploadImages = async (browser, carData) => {
         await wait(2);
       }
 
-      const numImages = carData.find((data) => data.name === 'images').value
-        .length;
+      const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
 
-      for (let i = 0; i < numImages; i++) {
+      // Get all jpg files in the directory and sort them naturally
+      const imageFiles = fs
+        .readdirSync(adImagesDirectory)
+        .filter((file) => file.toLowerCase().endsWith('.jpg'))
+        .sort((a, b) => {
+          // Extract numbers from filenames if they exist
+          const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+          const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+          return numA - numB;
+        });
+
+      for (const imageFile of imageFiles) {
         await wait(3);
         imagesUploadPage = await browser
           .pages()
           .then((pages) => pages[pages.length - 1]);
 
-        console.log('Uploading image', i + 1, 'of', numImages);
+        console.log('Uploading image:', imageFile);
 
         // Wait for file input with increased timeout
         await imagesUploadPage.waitForSelector('input[type=file]', {
@@ -469,8 +481,7 @@ const uploadImages = async (browser, carData) => {
           throw new Error('File input not found');
         }
 
-        const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
-        const imagePath = path.join(adImagesDirectory, `${i}.jpg`);
+        const imagePath = path.join(adImagesDirectory, imageFile);
 
         if (!fs.existsSync(imagePath)) {
           console.log(`Image file ${imagePath} does not exist.`);
@@ -518,15 +529,9 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
   const browser = await setupBrowser();
   await loginToAvtonet(browser, email, password);
   const carData = await getCarData(browser, adId, hdImages);
-  const carDataJsonPath = path.join('./carDataTest', `${adId}.json`);
-  fs.mkdirSync(path.dirname(carDataJsonPath), { recursive: true });
-  fs.writeFileSync(carDataJsonPath, JSON.stringify(carData, null, 2));
-  console.log('Car data');
-  console.log(carData);
   await deleteOldAd(browser, adId);
   await createNewAd(browser, carData, adType);
   await uploadImages(browser, carData);
-
   await browser.close();
 };
 

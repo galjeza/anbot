@@ -5,22 +5,33 @@ const Obnavljanje = () => {
   const location = useLocation();
   const { selected, pause, type } = location.state || { selected: [] };
   const navigate = useNavigate();
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   console.log('Type in obnavljanje: ', type);
 
   useEffect(() => {
-    let timeoutId;
-    const renewAds = async () => {
-      await window.electron.ipcRenderer.renewAds(selected, pause, type);
-      navigate('/');
+    const checkForUpdates = async () => {
+      const hasUpdate = await window.electron.ipcRenderer.checkUpdateStatus();
+      if (hasUpdate) {
+        setUpdateAvailable(true);
+        navigate('/');
+        return;
+      }
+
+      if (selected.length > 0) {
+        await window.electron.ipcRenderer.renewAds(selected, pause, type);
+        navigate('/');
+      } else {
+        navigate('/');
+      }
     };
 
-    if (selected.length > 0) {
-      renewAds();
-    } else {
-      navigate('/'); // Navigate back if no ads are selected
-    }
+    checkForUpdates();
   }, []);
+
+  if (updateAvailable) {
+    return null; // Will redirect to home page
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">

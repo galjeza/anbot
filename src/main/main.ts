@@ -18,6 +18,8 @@ import { resolveHtmlPath } from './util';
 import Store from 'electron-store';
 import { fetchActiveAds } from '../scraper/get-active-ads';
 import { renewAd } from '../scraper/renew-ad';
+import { UpdateInfo } from 'electron-updater';
+import { checkForUpdates, updateAvailable } from './updater';
 
 class AppUpdater {
   constructor() {
@@ -74,6 +76,22 @@ ipcMain.on('electron-store-get', (event, key) => {
 ipcMain.on('electron-store-set', (event, key, val) => {
   event.returnValue = store.set(key, val);
 });
+
+// Development testing endpoint
+if (process.env.NODE_ENV === 'development') {
+  ipcMain.handle('dev-trigger-update', () => {
+    console.log('Manually triggering update available');
+    const updateInfo: UpdateInfo = {
+      version: '99.99.99',
+      files: [],
+      path: '',
+      sha512: '',
+      releaseDate: new Date().toISOString(),
+    };
+    autoUpdater.emit('update-available', updateInfo);
+    return true;
+  });
+}
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -180,6 +198,9 @@ app
     ipcMain.handle('get-ads', (event, adType) => handleGetAds(event, adType));
     ipcMain.handle('renew-ads', handleRenewAds);
     ipcMain.handle('test', handleTest);
+    ipcMain.handle('check-update-status', () => {
+      return updateAvailable;
+    });
     const userDataPath = app.getPath('userData');
     console.log('userDataPath', userDataPath);
     createWindow();

@@ -30,6 +30,15 @@ const electronHandler = {
     renewAds(ads: string, pause: number, adType: any) {
       return ipcRenderer.invoke('renew-ads', ads, pause, adType);
     },
+
+    checkUpdateStatus() {
+      return ipcRenderer.invoke('check-update-status');
+    },
+
+    // Development testing function
+    devTriggerUpdate() {
+      return ipcRenderer.invoke('dev-trigger-update');
+    },
   },
   store: {
     get(key: any) {

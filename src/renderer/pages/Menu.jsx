@@ -13,6 +13,7 @@ import {
 */
 const Menu = () => {
   const [loading, setLoading] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   // Initialize user state with null or default values
   const [user, setUser] = useState({
     chromePath: '',
@@ -22,6 +23,19 @@ const Menu = () => {
     brokerId: '',
     hdImages: false,
   });
+
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      const hasUpdate = await window.electron.ipcRenderer.checkUpdateStatus();
+      setUpdateAvailable(hasUpdate);
+    };
+
+    const interval = setInterval(checkForUpdates, 60000); // Check every minute
+    checkForUpdates(); // Check immediately on mount
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchApiData = async (email) => {
       console.log('1');
@@ -90,43 +104,48 @@ const Menu = () => {
   );
 
   return (
-    <div className="flex items-center flex-col justify-center w-screen h-screen bg-gray-900">
-      <h1 className="text-red-400 text-2xl font-bold mb-4">
-        Opozorilo: Ne obnavljajte oglasov ki nimajo objavljene VIN!
-      </h1>
-      <div className="max-w-sm w-full bg-gray-800 text-gray-200 shadow-md rounded-lg overflow-hidden">
-        <div className="p-5">
-          <div className="flex items-center mb-3">
-            {/* <MailIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span>Email: {user.email}</span>
-          </div>
-          <div className="flex items-center mb-3">
-            {/*<KeyIcon className="h-6 w-6 text-gray-400 mr-2" /> */}
-            <span>Geslo: {user.password}</span>{' '}
-          </div>
-          <div className="flex items-center mb-3">
-            {/* <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span>
-              Status naročnine:
-              {isSubscriptionActive ? (
-                <span className="text-green-400">
-                  {' '}
-                  Aktivna do {subdateDateString}
-                </span>
-              ) : (
-                <span className="text-red-400">Ni aktivna</span>
-              )}
-            </span>
-          </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="w-full max-w-md p-4 bg-gray-800 shadow-md rounded-lg">
+        <h2 className="text-lg font-semibold text-center mb-4">
+          Avtonet Bot - Obnavljanje oglasov
+        </h2>
 
-          <div className="flex items-center mb-3">
-            {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span>Broker ID: {user.brokerId}</span>
+        {updateAvailable && (
+          <div className="mb-4 p-4 bg-yellow-600 rounded-lg">
+            <h3 className="font-bold mb-2">
+              Na voljo je nova verzija programa!
+            </h3>
+            <p className="mb-2">Za posodobitev:</p>
+            <ol className="list-decimal list-inside">
+              <li>Zaprite program</li>
+              <li>Zaženite program ponovno</li>
+              <li>Potrdite namestitev posodobitve</li>
+            </ol>
+            <p className="mt-2 text-yellow-200">
+              Obnavljanje oglasov je onemogočeno dokler ne namestite
+              posodobitve.
+            </p>
           </div>
-          <div className="flex items-center mb-3">
-            {/* <LinkIcon className="h-6 w-6 text-gray-400 mr-2" />*/}
-            <span> Hd slike: {user.hdImages ? 'Da' : 'Ne'}</span>
-          </div>
+        )}
+
+        <div className="bg-gray-700 p-4 mb-4 rounded-lg">
+          <p className="mb-2">
+            <span className="font-semibold">Email:</span> {user.email}
+          </p>
+          <p className="mb-2">
+            <span className="font-semibold">Naročnina aktivna do:</span>{' '}
+            {subdateDateString}
+          </p>
+          <p>
+            <span className="font-semibold">Status naročnine:</span>{' '}
+            <span
+              className={
+                isSubscriptionActive ? 'text-green-400' : 'text-red-400'
+              }
+            >
+              {isSubscriptionActive ? 'Aktivna' : 'Neaktivna'}
+            </span>
+          </p>
         </div>
 
         <div className="bg-gray-700 p-4">
@@ -136,7 +155,7 @@ const Menu = () => {
           >
             Konfiguracija
           </Link>
-          {isSubscriptionActive ? (
+          {isSubscriptionActive && !updateAvailable ? (
             <>
               <Link
                 to="/adlist"
@@ -160,9 +179,26 @@ const Menu = () => {
           ) : (
             <p>
               <span className="text-red-400">
-                Obnova oglasov ni mogoča saj nimate aktivne naročnine
+                {updateAvailable
+                  ? 'Obnova oglasov ni mogoča. Prosimo, posodobite program.'
+                  : 'Obnova oglasov ni mogoča saj nimate aktivne naročnine'}
               </span>
             </p>
+          )}
+
+          {/* Developer testing button - only visible in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={async () => {
+                await window.electron.ipcRenderer.devTriggerUpdate();
+                const hasUpdate =
+                  await window.electron.ipcRenderer.checkUpdateStatus();
+                setUpdateAvailable(hasUpdate);
+              }}
+              className="mt-4 py-2 px-4 text-gray-200 bg-red-800 hover:bg-red-700 mb-2 border border-red-600 rounded-lg transition ease-in-out duration-150"
+            >
+              [DEV] Trigger Update Available
+            </button>
           )}
         </div>
       </div>
