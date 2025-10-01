@@ -27,57 +27,63 @@ export const createNewAd = async (browser, carData, adType) => {
   const newAdUrl = getNewAdUrl(adType);
 
   const [page] = await browser.pages();
-  // go to the new ad page
   await page.goto(newAdUrl);
-  await page.waitForSelector('select[name=znamka]', { timeout: 0 });
+  if (adType !== 'platisca') {
+    await page.waitForSelector('select[name=znamka]', { timeout: 0 });
 
-  await selectBrand(page, carData, adType);
-  console.log('Selected brand');
+    await selectBrand(page, carData, adType);
+    console.log('Selected brand');
 
-  const carModel = resolveModelValue(carData, adType, modelRelatedFields);
-  console.log('Resolved model value: ', carModel);
+    const carModel = resolveModelValue(carData, adType, modelRelatedFields);
+    console.log('Resolved model value: ', carModel);
 
-  await selectModel(page, carModel);
+    await selectModel(page, carModel);
 
-  await page.select(
-    'select[name=oblika]',
-    carData.find((data) => data.name === 'oblika').value,
-  );
+    await page.select(
+      'select[name=oblika]',
+      carData.find((data) => data.name === 'oblika').value,
+    );
 
-  await setRegistrationMonthYear(page, carData);
+    await setRegistrationMonthYear(page, carData);
 
-  await setFuelType(page, carData);
-  await page.click('button[name="potrdi"]');
+    await setFuelType(page, carData);
+    await page.click('button[name="potrdi"]');
 
-  if (adType === 'car') {
-    await page.waitForSelector('.supurl', {
-      timeout: 0,
-    });
+    if (adType === 'car') {
+      await page.waitForSelector('.supurl', {
+        timeout: 0,
+      });
 
-    await page.click('.supurl');
-  }
-
-  await page.waitForSelector('input[name=cena]', { timeout: 0 });
-
-  await wait(2);
-  await fillWysiwygOpis(page, carData);
-
-  await fillCheckboxesFromData(page, carData);
-
-  await fillInputsFromData(page, carData);
-
-  await fillSelectsFromData(page, carData);
-
-  await fillTextareasFromData(page, carData);
-
-  if (adType === 'car') {
-    if (carData.find((data) => data.name === 'VINobjavi').value === '1') {
-      await page.click('#VINobjavi');
+      await page.click('.supurl');
     }
   }
 
-  await solveCaptcha(page);
+  await page.waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
+    visible: true,
+  });
+  console.log('Cena field found');
 
-  await wait(2);
+  await fillWysiwygOpis(page, carData);
+  console.log('Filled wysiwyg opis');
+
+  await fillCheckboxesFromData(page, carData);
+  console.log('Filled checkboxes');
+
+  await fillInputsFromData(page, carData);
+  console.log('Filled inputs');
+
+  await fillSelectsFromData(page, carData);
+  console.log('Filled selects');
+
+  await fillTextareasFromData(page, carData);
+  console.log('Filled textareas');
+
+  if (adType === 'car' && carData.find((data) => data.name === 'VINobjavi')) {
+    await page.click('#VINobjavi');
+  }
+
+  await solveCaptcha(page);
+  console.log('Captcha solved');
+
   await page.click('button[name="EDITAD"]');
 };

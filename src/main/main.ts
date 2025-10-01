@@ -30,10 +30,7 @@ class AppUpdater {
 }
 
 async function handleGetAds(event: any, adType: any) {
-  console.log('handleGetAds');
-  console.log('adType in main.ts', adType);
   const userData: any = store.get('userData');
-  console.log('userData in main.ts', userData);
   const ads = await fetchActiveAds(userData.brokerId, adType);
   return ads;
 }
@@ -44,7 +41,6 @@ async function handleRenewAds(
   pause: number,
   adType: any,
 ) {
-  console.log('handleRenewAd');
   const userData: any = store.get('userData');
   for (const ad of ads) {
     await renewAd(
@@ -58,11 +54,6 @@ async function handleRenewAds(
     await new Promise((resolve) => setTimeout(resolve, pauseInMs));
   }
   return 'renewed';
-}
-
-async function handleTest() {
-  console.log('handleTest');
-  return 'test';
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -197,7 +188,6 @@ app
   .then(() => {
     ipcMain.handle('get-ads', (event, adType) => handleGetAds(event, adType));
     ipcMain.handle('renew-ads', handleRenewAds);
-    ipcMain.handle('test', handleTest);
     ipcMain.handle('check-update-status', () => {
       return updateAvailable;
     });

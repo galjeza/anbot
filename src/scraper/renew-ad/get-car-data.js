@@ -4,10 +4,7 @@ import { app } from 'electron';
 
 import { reduceSharpnessDesaturateAndBlurEdges } from '../utils/utils.js';
 import { getAdImagesDirectory, downloadImage, wait } from '../utils/utils.js';
-import {
-  AVTONETEDITPREFIX,
-  AVTONET_IMAGES_PREFIX,
-} from '../utils/constants.js';
+import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from '../utils/constants';
 import { solveCaptcha } from './solve-captcha.js';
 
 export const getCarData = async (browser, adId, hdImages) => {
@@ -126,6 +123,10 @@ export const getCarData = async (browser, adId, hdImages) => {
     fs.mkdirSync(adImagesDirectory, { recursive: true });
 
     for (const [index, image] of adImages.entries()) {
+      console.log(
+        'Downloading image to: ',
+        path.join(adImagesDirectory, `${index}.jpg`),
+      );
       await downloadImage(image, path.join(adImagesDirectory, `${index}.jpg`));
       if (!hdImages) {
         await reduceSharpnessDesaturateAndBlurEdges(

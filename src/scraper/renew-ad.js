@@ -8,10 +8,15 @@ import { uploadImages } from './renew-ad/upload-images.js';
 export const renewAd = async (adId, email, password, hdImages, adType) => {
   const browser = await setupBrowser();
   await loginToAvtonet(browser, email, password);
+  console.log('* Logged in successfully');
   const carData = await getCarData(browser, adId, hdImages);
+  console.log('* Fetched car data successfully');
   // await deleteOldAd(browser, adId);
   await createNewAd(browser, carData, adType);
-  // await uploadImages(browser, carData);
+  console.log('* Created new ad successfully');
+  await uploadImages(browser, carData);
+  console.log('* Uploaded images successfully');
+  await wait(100000);
   await browser.close();
 };
 
