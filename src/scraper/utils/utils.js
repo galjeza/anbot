@@ -6,7 +6,6 @@ import path from 'path';
 export async function saveList(list, filename) {
   await fs.writeFile(filename, JSON.stringify(list), (err) => {
     if (err) {
-      
     }
   });
 }
@@ -20,10 +19,9 @@ export function getAdImagesDirectory(carData, userDataPath) {
     'letoReg',
     'cena',
   ];
-  
+
   relevantFields.forEach((field) => {
     const fieldData = carData.find((data) => data.name === field);
-    
   });
 
   const simpleHash = generateAdHashSimple(carData);
@@ -55,21 +53,17 @@ export function getAdImagesDirectory(carData, userDataPath) {
 
   // First check if any legacy directories exist
   if (fs.existsSync(legacyV3AdImagesDirectory)) {
-    
     return legacyV3AdImagesDirectory;
   }
   if (fs.existsSync(legacyV2AdImagesDirectory)) {
-    
     return legacyV2AdImagesDirectory;
   }
   if (fs.existsSync(legacyV1AdImagesDirectory)) {
-    
     return legacyV1AdImagesDirectory;
   }
 
   // Only if no legacy directories exist, check for or create simple hash directory
   if (fs.existsSync(simpleAdImagesDirectory)) {
-    
     return simpleAdImagesDirectory;
   }
 
@@ -164,7 +158,6 @@ export function generateAdHashLegacyV1(adProperties) {
 }
 
 export async function downloadImage(url, outputPath) {
-  
   try {
     const response = await axios({
       method: 'GET',
@@ -179,12 +172,7 @@ export async function downloadImage(url, outputPath) {
       },
     });
     fs.writeFileSync(outputPath, response.data);
-  } catch (error) {
-    
-      'An error occurred while downloading the image:',
-      error.message,
-    );
-  }
+  } catch (error) {}
 }
 
 export async function wait(s) {

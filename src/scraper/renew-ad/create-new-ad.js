@@ -32,8 +32,10 @@ export const createNewAd = async (browser, carData, adType) => {
   await page.waitForSelector('select[name=znamka]', { timeout: 0 });
 
   await selectBrand(page, carData, adType);
+  console.log('Selected brand');
 
   const carModel = resolveModelValue(carData, adType, modelRelatedFields);
+  console.log('Resolved model value: ', carModel);
 
   await selectModel(page, carModel);
 

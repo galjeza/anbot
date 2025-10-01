@@ -2,21 +2,21 @@ import { setupBrowser } from './utils/browser-utils.js';
 import { AVTONET_URLS } from './utils/constants.js';
 
 export async function fetchActiveAds(brokerId, adType) {
-  const url = AVTONET_URLS[adType] + brokerId;
+  const url = `${AVTONET_URLS[adType]}${brokerId}`;
   const browser = await setupBrowser();
   const [page] = await browser.pages();
   await page.goto(url);
 
-  await page.waitForSelector('.GO-Results-Row');
-  let adElements = await page.$$('.GO-Results-Row');
+  const RESULTS_ROW_SELECTOR = '.GO-Results-Row';
+  const NEXT_BUTTON_SELECTOR = '.GO-Rounded-R';
+
+  await page.waitForSelector(RESULTS_ROW_SELECTOR);
+  let resultRows = await page.$$(RESULTS_ROW_SELECTOR);
   const adData = [];
 
-  let scrapePage = true;
-
-  while (scrapePage) {
-    for (const adElement of adElements) {
+  while (true) {
+    for (const adElement of resultRows) {
       try {
-        const tableRows = await adElement.$$('.GO-Results-Data-Top tr');
         const photoElement = await adElement.$('.GO-Results-Photo');
 
         if (!photoElement) {
@@ -41,31 +41,27 @@ export async function fetchActiveAds(brokerId, adType) {
           adUrl,
           adId,
         });
-      } catch (error) {
+      } catch (_) {
         continue;
       }
     }
-    const nextPageButton = await page.$('.GO-Rounded-R');
-    if (nextPageButton) {
-      const disabled = await page.evaluate(
-        (el) => el.classList.contains('disabled'),
-        nextPageButton,
-      );
-      if (disabled) {
-        scrapePage = false;
-        break;
-      }
-      const nextPageUrl = await page.evaluate(
-        (el) => el.querySelector('a').href,
-        nextPageButton,
-      );
+    const nextPageButton = await page.$(NEXT_BUTTON_SELECTOR);
+    if (!nextPageButton) break;
 
-      await page.goto(nextPageUrl);
-      await page.waitForSelector('.GO-Results-Row');
-      adElements = await page.$$('.GO-Results-Row');
-    } else {
-      scrapePage = false;
-    }
+    const isDisabled = await page.evaluate(
+      (el) => el.classList.contains('disabled'),
+      nextPageButton,
+    );
+    if (isDisabled) break;
+
+    const nextPageUrl = await page.evaluate(
+      (el) => el.querySelector('a').href,
+      nextPageButton,
+    );
+
+    await page.goto(nextPageUrl);
+    await page.waitForSelector(RESULTS_ROW_SELECTOR);
+    resultRows = await page.$$(RESULTS_ROW_SELECTOR);
   }
 
   await browser.close();
