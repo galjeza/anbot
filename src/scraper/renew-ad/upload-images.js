@@ -4,7 +4,7 @@ import { app } from 'electron';
 
 import { getAdImagesDirectory, wait, randomWait } from '../utils/utils.js';
 
-export const uploadImages = async (browser, carData) => {
+export const uploadImages = async (browser, carData, adType = 'car') => {
   const userDataPath = app.getPath('userData');
   const maxRetries = 3;
   let retryCount = 0;
@@ -15,7 +15,6 @@ export const uploadImages = async (browser, carData) => {
         .pages()
         .then((pages) => pages[pages.length - 1]);
 
-      // Wait for navigation to complete
       await imagesUploadPage
         .waitForNavigation({ timeout: 30000 })
         .catch(() => {});
@@ -44,7 +43,11 @@ export const uploadImages = async (browser, carData) => {
         await wait(2);
       }
 
-      const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
+      const adImagesDirectory = getAdImagesDirectory(
+        carData,
+        userDataPath,
+        adType,
+      );
 
       // Get all jpg files in the directory and sort them naturally
       const imageFiles = fs
@@ -90,7 +93,6 @@ export const uploadImages = async (browser, carData) => {
         }
       }
 
-      // If we get here without errors, break the retry loop
       break;
     } catch (error) {
       retryCount++;
@@ -101,7 +103,6 @@ export const uploadImages = async (browser, carData) => {
         );
       }
 
-      // Wait before retrying
       await wait(5);
     }
   }

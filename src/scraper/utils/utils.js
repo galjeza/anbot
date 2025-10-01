@@ -3,31 +3,13 @@ import axios from 'axios';
 import Jimp from 'jimp';
 import path from 'path';
 
-export async function saveList(list, filename) {
-  await fs.writeFile(filename, JSON.stringify(list), (err) => {
-    if (err) {
-    }
-  });
-}
+// Removed detectAdType function - using passed adType parameter instead
 
-export function getAdImagesDirectory(carData, userDataPath) {
-  const relevantFields = [
-    'znamkavozila',
-    'modelvozila',
-    'prevozenikm',
-    'tipvozila',
-    'letoReg',
-    'cena',
-  ];
-
-  relevantFields.forEach((field) => {
-    const fieldData = carData.find((data) => data.name === field);
-  });
-
-  const simpleHash = generateAdHashSimple(carData);
-  const legacyV3Hash = generateAdHashLegacyV3(carData);
-  const legacyV2Hash = generateAdHashLegacyV2(carData);
-  const legacyV1Hash = generateAdHashLegacyV1(carData);
+export function getAdImagesDirectory(carData, userDataPath, adType = 'car') {
+  const simpleHash = generateAdHashSimple(carData, adType);
+  const legacyV3Hash = generateAdHashLegacyV3(carData, adType);
+  const legacyV2Hash = generateAdHashLegacyV2(carData, adType);
+  const legacyV1Hash = generateAdHashLegacyV1(carData, adType);
 
   // Construct directory paths for all hash versions
   const simpleAdImagesDirectory = path.join(
@@ -71,8 +53,11 @@ export function getAdImagesDirectory(carData, userDataPath) {
   return legacyV3AdImagesDirectory;
 }
 
-export function generateAdHashSimple(adProperties) {
-  const relevantProperties = ['znamkavozila', 'modelvozila', 'letoReg'];
+export function generateAdHashSimple(adProperties, adType = 'car') {
+  const relevantProperties =
+    adType === 'platisca'
+      ? ['znamka', 'sirina', 'col', 'vijakov', 'premer', 'ET']
+      : ['znamkavozila', 'modelvozila', 'letoReg'];
   let stringToHash = '';
 
   adProperties.forEach((prop) => {
@@ -88,13 +73,11 @@ export function generateAdHashSimple(adProperties) {
   return stringToHash;
 }
 
-export function generateAdHashLegacyV3(adProperties) {
-  const relevantProperties = [
-    'znamkavozila',
-    'modelvozila',
-    'prevozenikm',
-    'letoReg',
-  ];
+export function generateAdHashLegacyV3(adProperties, adType = 'car') {
+  const relevantProperties =
+    adType === 'platisca'
+      ? ['znamka', 'sirina', 'col', 'vijakov', 'premer', 'ET']
+      : ['znamkavozila', 'modelvozila', 'prevozenikm', 'letoReg'];
   let stringToHash = '';
 
   adProperties.forEach((prop) => {
@@ -110,15 +93,18 @@ export function generateAdHashLegacyV3(adProperties) {
   return stringToHash;
 }
 
-export function generateAdHashLegacyV2(adProperties) {
-  const relevantProperties = [
-    'znamkavozila',
-    'modelvozila',
-    'prevozenikm',
-    'tipvozila',
-    'letoReg',
-    'cena',
-  ];
+export function generateAdHashLegacyV2(adProperties, adType = 'car') {
+  const relevantProperties =
+    adType === 'platisca'
+      ? ['znamka', 'sirina', 'col', 'vijakov', 'premer', 'ET']
+      : [
+          'znamkavozila',
+          'modelvozila',
+          'prevozenikm',
+          'tipvozila',
+          'letoReg',
+          'cena',
+        ];
   let stringToHash = '';
 
   adProperties.forEach((prop) => {
@@ -134,14 +120,11 @@ export function generateAdHashLegacyV2(adProperties) {
   return stringToHash;
 }
 
-export function generateAdHashLegacyV1(adProperties) {
-  const relevantProperties = [
-    'znamkavozila',
-    'modelvozila',
-    'prevozenikm',
-    'tipvozila',
-    'letoReg',
-  ];
+export function generateAdHashLegacyV1(adProperties, adType = 'car') {
+  const relevantProperties =
+    adType === 'platisca'
+      ? ['znamka', 'sirina', 'col', 'vijakov', 'premer', 'ET']
+      : ['znamkavozila', 'modelvozila', 'prevozenikm', 'tipvozila', 'letoReg'];
   let stringToHash = '';
 
   adProperties.forEach((prop) => {

@@ -7,7 +7,7 @@ import { getAdImagesDirectory, downloadImage, wait } from '../utils/utils.js';
 import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from '../utils/constants';
 import { solveCaptcha } from './solve-captcha.js';
 
-export const getCarData = async (browser, adId, hdImages) => {
+export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
   const userDataPath = app.getPath('userData');
   const [page] = await browser.pages();
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;
@@ -111,13 +111,14 @@ export const getCarData = async (browser, adId, hdImages) => {
   const images = await page.$$eval('img', (imgs) => imgs.map((img) => img.src));
   let adImages = images.filter((img) => img.includes('images.avto.net'));
   adImages = adImages.map((img) => img.replace('_160', ''));
+  console.log('- Found images: ', adImages);
   if (hdImages) {
     adImages = adImages.map((img) => img.replace('.jpg', '_HD.jpg'));
   }
 
   carData.push({ name: 'images', value: adImages });
 
-  const adImagesDirectory = getAdImagesDirectory(carData, userDataPath);
+  const adImagesDirectory = getAdImagesDirectory(carData, userDataPath, adType);
   carData.imagePath = adImagesDirectory;
   if (!fs.existsSync(adImagesDirectory)) {
     fs.mkdirSync(adImagesDirectory, { recursive: true });
@@ -135,6 +136,8 @@ export const getCarData = async (browser, adId, hdImages) => {
       }
     }
   } else {
+    console.log('Images already downloaded');
+    console.log('Images directory: ', adImagesDirectory);
   }
 
   return carData;
