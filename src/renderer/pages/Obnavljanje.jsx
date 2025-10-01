@@ -7,8 +7,6 @@ const Obnavljanje = () => {
   const navigate = useNavigate();
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  console.log('Type in obnavljanje: ', type);
-
   useEffect(() => {
     const checkForUpdates = async () => {
       const hasUpdate = await window.electron.ipcRenderer.checkUpdateStatus();

@@ -10,8 +10,6 @@ export const setRegistrationMonthYear = async (page, carData) => {
       carData.find((data) => data.name === 'letoReg').value,
     );
   } catch (e) {
-    console.log(carData.find((data) => data.name === 'letoReg').value);
-    console.log(e);
     await page.select('select[name="leto"]', 'NOVO vozilo');
   }
   await wait(3);

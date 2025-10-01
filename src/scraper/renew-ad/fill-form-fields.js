@@ -3,17 +3,14 @@ import { wait } from '../utils/utils.js';
 export const fillWysiwygOpis = async (page, carData) => {
   const frameElement = await page.$('iframe');
   if (frameElement) {
-    console.log('frameElement found');
     const frame = await frameElement.contentFrame();
     const frameBody = await frame.$('body');
     await frameBody.evaluate(
       (frameBody, htmlOpis) => (frameBody.innerHTML = htmlOpis),
       carData.find((data) => data.name === 'htmlOpis').value,
     );
-    console.log('GOT to #2');
     await wait(2);
   } else {
-    console.log('frameElement not found');
   }
 };
 

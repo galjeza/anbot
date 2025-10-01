@@ -38,20 +38,16 @@ const Menu = () => {
 
   useEffect(() => {
     const fetchApiData = async (email) => {
-      console.log('1');
       try {
-        console.log('2');
         const response = await fetch(
           `https://avtonet-server.onrender.com/user?email=${encodeURIComponent(
             email,
           )}`,
         );
-        console.log('3');
+
         const data = await response.json();
         return data;
       } catch (error) {
-        console.log('4');
-        console.error('Failed to fetch credits:', error);
         return 0; // Return a default value or handle the error as needed
       }
     };
@@ -60,14 +56,13 @@ const Menu = () => {
       setLoading(true);
       try {
         const userData = await window.electron.store.get('userData');
-        console.log('Fetched user data:', userData);
+
         if (userData) {
           // Fetch credits using the email from the stored user data
           const apiData = await fetchApiData(userData.email);
           const subscriptionPaidTo = apiData.subscriptionPaidTo;
           const brokerId = apiData.brokerId;
 
-          console.log('apiData', apiData);
           setUser({ ...userData, subscriptionPaidTo, brokerId }); // Update state with fetched credits
           window.electron.store.set('userData', {
             chromePath: userData.chromePath,
@@ -78,11 +73,8 @@ const Menu = () => {
             hdImages: apiData.hdImages || false,
           }); // Update store with fetched credits
         } else {
-          console.log('No user data found in the store, using default values.');
         }
-      } catch (error) {
-        console.error('Failed to fetch user data from electron-store:', error);
-      }
+      } catch (error) {}
       setLoading(false);
     };
 

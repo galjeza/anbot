@@ -6,7 +6,7 @@ import path from 'path';
 export async function saveList(list, filename) {
   await fs.writeFile(filename, JSON.stringify(list), (err) => {
     if (err) {
-      console.log(err);
+      
     }
   });
 }
@@ -20,10 +20,10 @@ export function getAdImagesDirectory(carData, userDataPath) {
     'letoReg',
     'cena',
   ];
-  console.log('Relevant fields for hash generation:');
+  
   relevantFields.forEach((field) => {
     const fieldData = carData.find((data) => data.name === field);
-    console.log(`${field}: ${fieldData ? fieldData.value : 'not found'}`);
+    
   });
 
   const simpleHash = generateAdHashSimple(carData);
@@ -55,21 +55,21 @@ export function getAdImagesDirectory(carData, userDataPath) {
 
   // First check if any legacy directories exist
   if (fs.existsSync(legacyV3AdImagesDirectory)) {
-    console.log('Legacy V3 hash directory exists:', legacyV3AdImagesDirectory);
+    
     return legacyV3AdImagesDirectory;
   }
   if (fs.existsSync(legacyV2AdImagesDirectory)) {
-    console.log('Legacy V2 hash directory exists:', legacyV2AdImagesDirectory);
+    
     return legacyV2AdImagesDirectory;
   }
   if (fs.existsSync(legacyV1AdImagesDirectory)) {
-    console.log('Legacy V1 hash directory exists:', legacyV1AdImagesDirectory);
+    
     return legacyV1AdImagesDirectory;
   }
 
   // Only if no legacy directories exist, check for or create simple hash directory
   if (fs.existsSync(simpleAdImagesDirectory)) {
-    console.log('Simple hash directory exists:', simpleAdImagesDirectory);
+    
     return simpleAdImagesDirectory;
   }
 
@@ -164,7 +164,7 @@ export function generateAdHashLegacyV1(adProperties) {
 }
 
 export async function downloadImage(url, outputPath) {
-  console.log('Image url, outputPath', url, outputPath);
+  
   try {
     const response = await axios({
       method: 'GET',
@@ -180,7 +180,7 @@ export async function downloadImage(url, outputPath) {
     });
     fs.writeFileSync(outputPath, response.data);
   } catch (error) {
-    console.error(
+    
       'An error occurred while downloading the image:',
       error.message,
     );

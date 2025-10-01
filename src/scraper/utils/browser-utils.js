@@ -14,7 +14,7 @@ async function getUsersChromePath() {
 
 export async function setupBrowser() {
   const chromePath = await getUsersChromePath();
-  console.log('chromePath', chromePath);
+
   const browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: false,

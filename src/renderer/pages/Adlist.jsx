@@ -14,8 +14,6 @@ const AdList = () => {
   const location = useLocation();
   const { type } = location.state || {}; // Get type from state
 
-  console.log('Type:', type);
-
   useEffect(() => {
     const getAds = async () => {
       setLoading(true);
@@ -23,7 +21,6 @@ const AdList = () => {
         const fetchedAds = await window.electron.ipcRenderer.getAds(type);
         setAds(fetchedAds || []); // Reverse the array after fetching
       } catch (error) {
-        console.error('Failed to fetch ads:', error);
       } finally {
         setLoading(false);
       }

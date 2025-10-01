@@ -18,7 +18,6 @@ export const loginToAvtonet = async (browser, email, password) => {
     "a[href='https://www.avto.net/_2016mojavtonet/logout.asp']",
     { timeout: 0 },
   );
-  console.log('Logged in');
 
   await wait(10);
 };

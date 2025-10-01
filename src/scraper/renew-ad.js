@@ -9,13 +9,8 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
   const browser = await setupBrowser();
   await loginToAvtonet(browser, email, password);
   const carData = await getCarData(browser, adId, hdImages);
-  console.log('Car data: ', carData);
-  console.log('Successfully got the car data ');
-  console.log('Email: ', email);
-  console.log('Passwrod: ', password);
   // await deleteOldAd(browser, adId);
   await createNewAd(browser, carData, adType);
-  console.log('Successfully created the new ad');
   // await uploadImages(browser, carData);
   await browser.close();
 };

@@ -63,8 +63,6 @@ export const uploadImages = async (browser, carData) => {
           .pages()
           .then((pages) => pages[pages.length - 1]);
 
-        console.log('Uploading image:', imageFile);
-
         // Wait for file input with increased timeout
         await imagesUploadPage.waitForSelector('input[type=file]', {
           timeout: 30000,
@@ -79,7 +77,6 @@ export const uploadImages = async (browser, carData) => {
         const imagePath = path.join(adImagesDirectory, imageFile);
 
         if (!fs.existsSync(imagePath)) {
-          console.log(`Image file ${imagePath} does not exist.`);
           continue;
         }
 
@@ -96,7 +93,6 @@ export const uploadImages = async (browser, carData) => {
       // If we get here without errors, break the retry loop
       break;
     } catch (error) {
-      console.log(`Attempt ${retryCount + 1} failed:`, error.message);
       retryCount++;
 
       if (retryCount === maxRetries) {

@@ -14,7 +14,6 @@ export const getCarData = async (browser, adId, hdImages) => {
   const userDataPath = app.getPath('userData');
   const [page] = await browser.pages();
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;
-  console.log(`Navigating to ${editUrl}`);
   await page.goto(`${AVTONETEDITPREFIX}${adId}`, { timeout: 0 });
   await page.waitForSelector('button[name=ADVIEW]', { timeout: 0 });
   await wait(3);
@@ -68,17 +67,8 @@ export const getCarData = async (browser, adId, hdImages) => {
   ];
 
   // Add logging to see what fields were scraped
-  console.log('=== SCRAPED DATA ANALYSIS ===');
-  console.log('Text areas found:', textAreas.length);
-  console.log('Checkboxes found:', checkboxes.length);
-  console.log('Selects found:', selects.length);
-  console.log('Inputs found:', inputs.length);
 
   // Log all field names for debugging
-  console.log('All field names scraped:');
-  carData.forEach((field, index) => {
-    console.log(`${index}: ${field.name}`);
-  });
 
   function randomPriceOffset() {
     const offset = Math.floor(Math.random() * 50) + 1;
@@ -102,7 +92,6 @@ export const getCarData = async (browser, adId, hdImages) => {
     await page.click('input[name="cena"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="cena"]', newPrice.toString());
-    console.log(`Price changed from ${originalPrice} to ${newPrice}`);
   }
 
   if (letoRegField) {
@@ -111,7 +100,6 @@ export const getCarData = async (browser, adId, hdImages) => {
     await page.click('input[name="letoReg"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="letoReg"]', newYear);
-    console.log(`Registration year changed from ${originalYear} to ${newYear}`);
   }
 
   await wait(3);
@@ -127,7 +115,6 @@ export const getCarData = async (browser, adId, hdImages) => {
   let adImages = images.filter((img) => img.includes('images.avto.net'));
   adImages = adImages.map((img) => img.replace('_160', ''));
   if (hdImages) {
-    console.log('HD Images downloading');
     adImages = adImages.map((img) => img.replace('.jpg', '_HD.jpg'));
   }
 
