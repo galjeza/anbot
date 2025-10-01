@@ -175,6 +175,15 @@ const Menu = () => {
               >
                 Obnovi dostavna vozila
               </Link>
+              <Link
+                to="/adlist"
+                state={{
+                  type: 'platisca',
+                }}
+                className="block py-2 px-4 text-gray-200 bg-gray-800 hover:bg-gray-600 mb-2 border border-gray-600 rounded-lg transition ease-in-out duration-150"
+              >
+                Obnovi platišča
+              </Link>
             </>
           ) : (
             <p>
