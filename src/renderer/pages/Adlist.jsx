@@ -9,6 +9,7 @@ const AdList = () => {
   const [selectedAds, setSelectedAds] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [pause, setPause] = useState(60);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const location = useLocation();
@@ -17,10 +18,12 @@ const AdList = () => {
   useEffect(() => {
     const getAds = async () => {
       setLoading(true);
+      setError(null);
       try {
         const fetchedAds = await window.electron.ipcRenderer.getAds(type);
         setAds(fetchedAds || []); // Reverse the array after fetching
       } catch (error) {
+        setError(error.message || 'An error occurred while fetching ads');
       } finally {
         setLoading(false);
       }
@@ -56,6 +59,27 @@ const AdList = () => {
     return (
       <div className="flex justify-center items-center min-h-screen bg-slate-600 text-white">
         Nalagam oglase...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+        <div className="w-full max-w-md p-4 bg-red-800 shadow-md rounded-lg">
+          <h2 className="text-lg font-semibold text-center mb-4 text-white">
+            Napaka pri nalaganju oglasov
+          </h2>
+          <p className="text-center mt-4 text-red-200">{error}</p>
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => navigate('/')}
+              className="py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-lg"
+            >
+              Nazaj na glavno stran
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

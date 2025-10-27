@@ -23,11 +23,32 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
   );
 
   const checkboxes = await page.$$eval('input[type=checkbox]', (inputs) =>
-    inputs.map((input) => ({
-      name: input.name,
-      value: input.checked ? '1' : '0',
-    })),
+    inputs.map((input) => {
+      const baseName = input.name;
+      const augmentedName =
+        baseName === 'opombeznamka' && input.value
+          ? `${baseName}|${input.value}`
+          : baseName;
+      return {
+        name: augmentedName,
+        value: input.checked ? '1' : '0',
+      };
+    }),
   );
+
+  try {
+    const totalCheckboxes = checkboxes.length;
+    const brandCompat = checkboxes.filter((c) => c.name.startsWith('opombeznamka|'));
+    const brandCompatSample = brandCompat
+      .slice(0, 10)
+      .map((c) => `${c.name.split('|')[1]}=${c.value}`);
+    console.log(
+      '[Scrape] Checkboxes:',
+      { total: totalCheckboxes, brandCompatCount: brandCompat.length, brandCompatSample },
+    );
+  } catch (e) {
+    console.log('[Scrape] Checkbox logging failed', e);
+  }
 
   const selects = await page.$$eval('select', (selects) =>
     selects.map((select) => ({

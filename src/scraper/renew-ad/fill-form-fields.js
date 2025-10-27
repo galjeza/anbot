@@ -17,10 +17,46 @@ export const fillWysiwygOpis = async (page, carData) => {
 export const fillCheckboxesFromData = async (page, carData) => {
   const checkboxes = await page.$$('input[type=checkbox]');
   for (const checkbox of checkboxes) {
-    const name = await checkbox.evaluate((node) => node.name);
-    const value = carData.find((data) => data.name === name).value;
-    if (value === '1') {
+    const meta = await checkbox.evaluate((node) => ({
+      name: node.name,
+      value: node.value,
+      checked: node.checked,
+    }));
+
+    // Try exact match first (augmented names like "opombeznamka|BMW")
+    let dataEntry = carData.find((d) => d.name === meta.name);
+
+    // If not found and this is a brand compatibility checkbox, use augmented lookup
+    if (!dataEntry && meta.name === 'opombeznamka') {
+      dataEntry = carData.find((d) => d.name === `opombeznamka|${meta.value}`);
+    }
+
+    if (!dataEntry) {
+      if (meta.name === 'opombeznamka') {
+        console.log('[Fill] Brand checkbox has no data entry', {
+          brand: meta.value,
+        });
+      }
+      continue;
+    }
+
+    const shouldBeChecked = dataEntry.value === '1' || dataEntry.value === true;
+
+    // Idempotent toggle: only click when state differs
+    if (shouldBeChecked !== meta.checked) {
+      if (meta.name === 'opombeznamka') {
+        console.log('[Fill] Clicking brand checkbox', {
+          brand: meta.value,
+          desired: shouldBeChecked,
+          current: meta.checked,
+        });
+      }
       await checkbox.click();
+    } else if (meta.name === 'opombeznamka') {
+      console.log('[Fill] Brand checkbox already in desired state', {
+        brand: meta.value,
+        desired: shouldBeChecked,
+      });
     }
   }
 };
