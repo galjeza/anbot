@@ -43,17 +43,21 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
     })),
   );
 
-  const frameElement = await page.$('iframe');
-  let htmlOpis;
-  if (frameElement) {
-    const frame = await frameElement.contentFrame();
-    const frameBody = await frame.$('body');
-    const innerHTML = await frame.evaluate(
-      (frameBody) => frameBody.innerHTML,
-      frameBody,
-    );
-    htmlOpis = innerHTML;
-  }
+  // Prefer reading the HTML description from the textarea that CKEditor binds to
+  // instead of assuming the first iframe on the page is the editor.
+  const htmlOpisField = textAreas.find((textarea) => textarea.name === 'opombe');
+  const htmlOpis = htmlOpisField ? htmlOpisField.value : null;
+
+  console.log(
+    '[getCarData] htmlOpisField name:',
+    htmlOpisField ? htmlOpisField.name : null,
+  );
+  console.log(
+    '[getCarData] htmlOpis length:',
+    htmlOpis ? htmlOpis.length : 0,
+    'snippet:',
+    htmlOpis ? htmlOpis.slice(0, 120) : '',
+  );
 
   const carData = [
     ...textAreas,
