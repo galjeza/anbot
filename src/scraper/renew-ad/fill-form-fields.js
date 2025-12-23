@@ -89,6 +89,12 @@ export const fillTextareasFromData = async (page, carData) => {
   for (const textarea of textareas) {
     try {
       const name = await textarea.evaluate((node) => node.name);
+      // The main description ("opombe"/HTML opis) is handled separately
+      // in fillWysiwygOpis, so skip it here to avoid duplicating or
+      // corrupting the description content.
+      if (name === 'opombe') {
+        continue;
+      }
       const value = carData.find((data) => data.name === name).value;
       if (value) {
         await textarea.click({ clickCount: 3 });
