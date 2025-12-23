@@ -1,17 +1,45 @@
 import { wait } from '../utils/utils.js';
 
 export const fillWysiwygOpis = async (page, carData) => {
-  const frameElement = await page.$('iframe');
-  if (frameElement) {
-    const frame = await frameElement.contentFrame();
-    const frameBody = await frame.$('body');
-    await frameBody.evaluate(
-      (frameBody, htmlOpis) => (frameBody.innerHTML = htmlOpis),
-      carData.find((data) => data.name === 'htmlOpis').value,
-    );
-    await wait(2);
-  } else {
+  const source =
+    carData.find((data) => data.name === 'htmlOpis') ||
+    carData.find((data) => data.name === 'opombe');
+
+  const htmlOpis = source ? source.value : null;
+  if (!htmlOpis) {
+    console.log('[fillWysiwygOpis] No htmlOpis/opombe value found in carData');
+    return;
   }
+
+  console.log(
+    '[fillWysiwygOpis] Using source field:',
+    source.name,
+    'length:',
+    htmlOpis.length,
+    'snippet:',
+    htmlOpis.slice(0, 120),
+  );
+
+  // Update both the underlying textarea and the CKEditor instance, if present.
+  await page.evaluate((htmlOpis) => {
+    const textarea =
+      document.querySelector('#editor1') ||
+      document.querySelector('textarea[name="opombe"]');
+
+    if (textarea) {
+      textarea.value = htmlOpis;
+    }
+
+    if (
+      window.CKEDITOR &&
+      window.CKEDITOR.instances &&
+      window.CKEDITOR.instances.editor1
+    ) {
+      window.CKEDITOR.instances.editor1.setData(htmlOpis);
+    }
+  }, htmlOpis);
+
+  await wait(2);
 };
 
 export const fillCheckboxesFromData = async (page, carData) => {
@@ -97,6 +125,12 @@ export const fillTextareasFromData = async (page, carData) => {
   for (const textarea of textareas) {
     try {
       const name = await textarea.evaluate((node) => node.name);
+      // The main description ("opombe"/HTML opis) is handled separately
+      // in fillWysiwygOpis, so skip it here to avoid duplicating or
+      // corrupting the description content.
+      if (name === 'opombe') {
+        continue;
+      }
       const value = carData.find((data) => data.name === name).value;
       if (value) {
         await textarea.click({ clickCount: 3 });

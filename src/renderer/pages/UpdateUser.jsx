@@ -16,10 +16,19 @@ const UpdateUser = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userData = await window.electron.store.get('userData');
-      setEmail(userData.email);
-      setPassword(userData.password);
-      setChromePath(userData.chromePath);
+      try {
+        const userData = await window.electron.store.get('userData');
+        if (userData) {
+          setEmail(userData.email || '');
+          setPassword(userData.password || '');
+          setChromePath(userData.chromePath || '');
+        }
+      } catch (e) {
+        // If there is no existing userData or store access fails, keep defaults
+        setEmail('');
+        setPassword('');
+        setChromePath('');
+      }
     };
     fetchUserData();
   }, []);

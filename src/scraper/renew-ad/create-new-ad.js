@@ -1,4 +1,3 @@
-import { wait } from '../utils/utils.js';
 import { solveCaptcha } from './solve-captcha.js';
 import { getNewAdUrl } from './get-new-ad-url.js';
 import {
@@ -78,8 +77,17 @@ export const createNewAd = async (browser, carData, adType) => {
   await fillTextareasFromData(page, carData);
   console.log('Filled textareas');
 
-  if (adType === 'car' && carData.find((data) => data.name === 'VINobjavi')) {
-    await page.click('#VINobjavi');
+  const vinObjaviField = carData.find((data) => data.name === 'VINobjavi');
+  if (adType === 'car' && vinObjaviField) {
+    const shouldBeChecked = vinObjaviField.value === '1';
+    const isChecked = await page.$eval(
+      '#VINobjavi',
+      (el) => el && el.checked,
+    );
+
+    if (shouldBeChecked !== isChecked) {
+      await page.click('#VINobjavi');
+    }
   }
 
   await solveCaptcha(page);
