@@ -134,6 +134,9 @@ export const fillTextareasFromData = async (page, carData) => {
       const value = carData.find((data) => data.name === name).value;
       if (value) {
         await textarea.click({ clickCount: 3 });
+        await textarea.evaluate((node) => {
+          node.value = '';
+        });
         await textarea.type(value);
       }
     } catch (e) {
