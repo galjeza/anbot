@@ -1,4 +1,4 @@
-import { randomWait } from '../utils/utils.js';
+import { wait } from '../utils/utils.js';
 
 export const selectBrand = async (page, carData, adType) => {
   const znamkaOptionsValues = await page.$$eval(
@@ -24,7 +24,7 @@ export const selectBrand = async (page, carData, adType) => {
     await page.select('select[name=znamka]', znamkaData.value);
   }
 
-  await randomWait(1, 2);
+  await wait(3);
 };
 
 export const resolveModelValue = (carData, adType, modelRelatedFields) => {
@@ -56,10 +56,15 @@ export const selectModel = async (page, carModel) => {
     (options) => options.map((option) => option.value),
   );
 
+  console.log('[SelectModel] Available model values:', modelOptionsValues);
+  console.log('[SelectModel] Requested car model:', carModel);
+
   if (modelOptionsValues.includes(carModel)) {
     await page.select('select[name=model]', carModel);
   } else {
     const weirdName = carModel.replace(' ', '---');
     await page.select('select[name=model]', weirdName);
   }
+
+  await wait(3);
 };
