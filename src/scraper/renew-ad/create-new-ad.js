@@ -48,6 +48,8 @@ export const createNewAd = async (browser, carData, adType) => {
     await setFuelType(page, carData);
     await page.click('button[name="potrdi"]');
 
+    await page.waitForTimeout(5000);
+
     if (adType === 'car') {
       await page.waitForSelector('.supurl', {
         timeout: 0,
@@ -59,6 +61,7 @@ export const createNewAd = async (browser, carData, adType) => {
 
   await page.waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
     visible: true,
+    timeout: 90000,
   });
   console.log('Cena field found');
 
@@ -80,10 +83,7 @@ export const createNewAd = async (browser, carData, adType) => {
   const vinObjaviField = carData.find((data) => data.name === 'VINobjavi');
   if (adType === 'car' && vinObjaviField) {
     const shouldBeChecked = vinObjaviField.value === '1';
-    const isChecked = await page.$eval(
-      '#VINobjavi',
-      (el) => el && el.checked,
-    );
+    const isChecked = await page.$eval('#VINobjavi', (el) => el && el.checked);
 
     if (shouldBeChecked !== isChecked) {
       await page.click('#VINobjavi');

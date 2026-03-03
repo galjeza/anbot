@@ -56,15 +56,42 @@ export const selectModel = async (page, carModel) => {
     (options) => options.map((option) => option.value),
   );
 
+  const normalizeModelValue = (value) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\(vsi\)/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
   console.log('[SelectModel] Available model values:', modelOptionsValues);
   console.log('[SelectModel] Requested car model:', carModel);
 
-  if (modelOptionsValues.includes(carModel)) {
-    await page.select('select[name=model]', carModel);
-  } else {
-    const weirdName = carModel.replace(' ', '---');
-    await page.select('select[name=model]', weirdName);
+  const requestedModel = String(carModel || '').trim();
+  const weirdName = requestedModel.replaceAll(' ', '---');
+
+  const directMatch = modelOptionsValues.find(
+    (value) => value === requestedModel,
+  );
+
+  const dashedMatch = modelOptionsValues.find((value) => value === weirdName);
+
+  const normalizedRequested = normalizeModelValue(requestedModel);
+  const normalizedMatch = modelOptionsValues.find(
+    (value) =>
+      normalizeModelValue(value) === normalizedRequested &&
+      !value.includes('(vsi)'),
+  );
+
+  const selectedModel = directMatch || dashedMatch || normalizedMatch;
+
+  if (!selectedModel) {
+    throw new Error(
+      `[SelectModel] Could not resolve model value for "${requestedModel}"`,
+    );
   }
+
+  console.log('[SelectModel] Selected model value:', selectedModel);
+  await page.select('select[name=model]', selectedModel);
 
   await wait(3);
 };
