@@ -1,24 +1,42 @@
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import UserAgentPlugin from 'puppeteer-extra-plugin-anonymize-ua';
-import puppeteer from 'puppeteer-extra';
-import Store from 'electron-store';
-puppeteer.use(UserAgentPlugin());
-puppeteer.use(StealthPlugin());
+// browser-utils.ts
+import puppeteer from 'puppeteer-core'; // core only, no extra
+import Steel from 'steel-sdk';
 
-async function getUsersChromePath() {
-  // get chrome path from the electron store which is created in main.ts
-  const store = new Store();
-  const chromePath = store.get('userData').chromePath;
-  return chromePath;
-}
+const STEEL_API_KEY =
+  process.env.STEEL_API_KEY ||
+  'ste-Qvl7pIHbKQWqKRpQQjyT96CK4BtJLnfn5w9QDMldrr4hX6MWZ6rbGXcQTRDvrILhC9fjkBpCFuzvoB31U21aX1kOHORkkNVUlwe';
+
+const client = new Steel({
+  steelAPIKey: STEEL_API_KEY,
+});
 
 export async function setupBrowser() {
-  // const chromePath = await getUsersChromePath();
-
-  const browser = await puppeteer.connect({
-    browserWSEndpoint:
-      'wss://connect.steel.dev?apiKey=ste-7BIdDYwyeapWeXOhfFhsRXaPjNFOecYzjLIBHquwkbOob7dWYLSqzH8jmQNvprHVmDF1gAREUuifoVlN5JypA7jvzrrzUFIJWQQ',
+  const session = await client.sessions.create({
+    // Only enable these if avtonet.si is actually blocking you —
+    // each one adds cold-start latency
+    useProxy: true,
+    solveCaptcha: true,
+    sessionTimeout: 5 * 60 * 1000, // keep it short, release explicitly
   });
 
-  return browser;
+  try {
+    const browser = await puppeteer.connect({
+      // Correct URL format per Steel docs
+      browserWSEndpoint: `wss://connect.steel.dev?apiKey=${STEEL_API_KEY}&sessionId=${session.id}`,
+    });
+
+    const release = async () => {
+      try {
+        await browser.disconnect();
+      } catch {}
+      try {
+        await client.sessions.release(session.id);
+      } catch {}
+    };
+
+    return { browser, release };
+  } catch (error) {
+    await client.sessions.release(session.id).catch(() => {});
+    throw error;
+  }
 }

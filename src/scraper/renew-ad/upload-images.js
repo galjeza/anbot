@@ -4,6 +4,8 @@ import { app } from 'electron';
 
 import { getAdImagesDirectory, wait, randomWait } from '../utils/utils.js';
 
+const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
+
 export const uploadImages = async (browser, carData, adType = 'car') => {
   const userDataPath = app.getPath('userData');
   const maxRetries = 3;
@@ -17,8 +19,11 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
         .pages()
         .then((pages) => pages[pages.length - 1]);
 
+      imagesUploadPage.setDefaultTimeout(SLOW_TIMEOUT_MS);
+      imagesUploadPage.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
+
       await imagesUploadPage
-        .waitForNavigation({ timeout: 30000 })
+        .waitForNavigation({ timeout: SLOW_TIMEOUT_MS })
         .catch(() => {});
 
       // Check if we're on the correct page by looking for multiple possible selectors
@@ -75,9 +80,12 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
           .pages()
           .then((pages) => pages[pages.length - 1]);
 
+        imagesUploadPage.setDefaultTimeout(SLOW_TIMEOUT_MS);
+        imagesUploadPage.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
+
         // Wait for file input with increased timeout
         await imagesUploadPage.waitForSelector('input[type=file]', {
-          timeout: 30000,
+          timeout: SLOW_TIMEOUT_MS,
           visible: true,
         });
 

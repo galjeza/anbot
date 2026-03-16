@@ -6,6 +6,7 @@ import { createNewAd } from './renew-ad/create-new-ad.js';
 import { uploadImages } from './renew-ad/upload-images.js';
 
 const IS_TEST_MODE = true;
+const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const renewAd = async (adId, email, password, hdImages, adType) => {
   console.log('[RenewAd] Start', {
@@ -14,30 +15,37 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
     hdImages,
     isTestMode: IS_TEST_MODE,
   });
-  const browser = await setupBrowser();
-  console.log('[RenewAd] Browser ready');
-  await loginToAvtonet(browser, email, password);
-  console.log('* Logged in successfully');
-  const carData = await getCarData(
-    browser,
-    adId,
-    hdImages,
-    adType,
-    IS_TEST_MODE,
-  );
-  console.log('* Fetched car data successfully');
-  if (IS_TEST_MODE) {
-    console.log('[Test Mode] Skipping delete of old ad');
-  } else {
-    await deleteOldAd(browser, adId);
-    console.log('* Deleted old ad successfully');
+  const { browser, release } = await setupBrowser();
+  let page;
+  try {
+    [page] = await browser.pages();
+    page.setDefaultTimeout(SLOW_TIMEOUT_MS);
+    page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
+    console.log('[RenewAd] Browser ready');
+    await loginToAvtonet(browser, email, password);
+    console.log('* Logged in successfully');
+    const carData = await getCarData(
+      browser,
+      adId,
+      hdImages,
+      adType,
+      IS_TEST_MODE,
+    );
+    console.log('* Fetched car data successfully');
+    if (IS_TEST_MODE) {
+      console.log('[Test Mode] Skipping delete of old ad');
+    } else {
+      await deleteOldAd(browser, adId);
+      console.log('* Deleted old ad successfully');
+    }
+    await createNewAd(browser, carData, adType);
+    console.log('* Created new ad successfully');
+    await uploadImages(browser, carData, adType);
+    console.log('* Uploaded images successfully');
+    console.log('[RenewAd] Done', { adId });
+  } finally {
+    await release().catch(() => undefined);
   }
-  await createNewAd(browser, carData, adType);
-  console.log('* Created new ad successfully');
-  await uploadImages(browser, carData, adType);
-  console.log('* Uploaded images successfully');
-  await browser.close();
-  console.log('[RenewAd] Done', { adId });
 };
 
 const renewAds = async (adIds, email, password) => {

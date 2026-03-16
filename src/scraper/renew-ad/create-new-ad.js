@@ -14,6 +14,9 @@ import {
   fillSelectsFromData,
   fillTextareasFromData,
 } from './fill-form-fields.js';
+import { wait } from '../utils/utils.js';
+
+const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const createNewAd = async (browser, carData, adType) => {
   console.log('[createNewAd] Start', { adType, fields: carData.length });
@@ -31,6 +34,8 @@ export const createNewAd = async (browser, carData, adType) => {
   console.log('[createNewAd] New ad URL', { newAdUrl });
 
   const [page] = await browser.pages();
+  page.setDefaultTimeout(SLOW_TIMEOUT_MS);
+  page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
   await page.goto(newAdUrl);
   if (adType !== 'platisca') {
     console.log('[createNewAd] Waiting for brand selector');
@@ -59,7 +64,7 @@ export const createNewAd = async (browser, carData, adType) => {
     await page.click('button[name="potrdi"]');
     console.log('[createNewAd] Confirmed step 1');
 
-    await page.waitForTimeout(5000);
+    await wait(5);
 
     if (adType === 'car') {
       await page.waitForSelector('.supurl', {
@@ -75,7 +80,7 @@ export const createNewAd = async (browser, carData, adType) => {
 
   await page.waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
     visible: true,
-    timeout: 90000,
+    timeout: SLOW_TIMEOUT_MS,
   });
   console.log('Cena field found');
 

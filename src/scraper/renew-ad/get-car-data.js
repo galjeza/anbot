@@ -7,6 +7,8 @@ import { getAdImagesDirectory, downloadImage, wait } from '../utils/utils.js';
 import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from '../utils/constants';
 import { solveCaptcha } from './solve-captcha.js';
 
+const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
+
 export const getCarData = async (
   browser,
   adId,
@@ -16,6 +18,8 @@ export const getCarData = async (
 ) => {
   const userDataPath = app.getPath('userData');
   const [page] = await browser.pages();
+  page.setDefaultTimeout(SLOW_TIMEOUT_MS);
+  page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;
   console.log('[getCarData] Start', {
     adId,
