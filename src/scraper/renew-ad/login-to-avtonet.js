@@ -11,6 +11,9 @@ export const loginToAvtonet = async (browser, email, password) => {
   await page.waitForSelector('input[name=enaslov]', {
     timeout: 0,
   });
+  console.log(
+    `[Login] Logging in with email: ${email} and password ${password}`,
+  );
   console.log('[Login] Typing credentials');
   await page.type('input[name=enaslov]', email);
   await page.type('input[name=geslo]', password);

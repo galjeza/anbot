@@ -24,24 +24,12 @@ export async function fetchActiveAds(
   await page.waitForSelector(RESULTS_ROW_SELECTOR);
   let resultRows = await page.$$(RESULTS_ROW_SELECTOR);
   const adData: ActiveAd[] = [];
-  let pageIndex = 1;
-  let rowIndex = 0;
 
   while (true) {
-    console.log(
-      `[fetchActiveAds] page ${pageIndex}: ${resultRows.length} result rows`,
-    );
     for (const adElement of resultRows) {
-      rowIndex += 1;
-      console.log(
-        `[fetchActiveAds] inspecting row ${rowIndex} on page ${pageIndex}`,
-      );
       try {
         const photoElement = await adElement.$('.GO-Results-Photo');
         if (!photoElement) {
-          console.log(
-            `[fetchActiveAds] skip row ${rowIndex}: missing photo element`,
-          );
           continue;
         }
 
@@ -61,75 +49,30 @@ export async function fetchActiveAds(
           '.GO-Results-Price',
         ];
 
-        const { priceText, priceSelector } = await adElement.evaluate(
-          (el, selectors) => {
-            for (const selector of selectors) {
-              const node = el.querySelector(selector);
-              if (!node) continue;
-              const text = (node as HTMLElement).innerText.trim();
-              if (text) return { priceText: text, priceSelector: selector };
-            }
-            return { priceText: '', priceSelector: '' };
-          },
-          priceSelectors,
-        );
-
-        const price = priceText;
-        if (!price) {
-          const priceDebug = await adElement.evaluate((el) => {
-            const priceNodes = Array.from(
-              el.querySelectorAll('[class*="Price"]'),
-            ).map((node) => ({
-              className: (node as HTMLElement).className,
-              text: (node as HTMLElement).innerText.trim(),
-            }));
-            const textSnippet = (el as HTMLElement).innerText
-              .trim()
-              .slice(0, 200);
-            const htmlSnippet = el.outerHTML.slice(0, 500);
-            return { priceNodes, textSnippet, htmlSnippet };
-          });
-
-          console.log(
-            `[fetchActiveAds] row ${rowIndex} missing price selectors`,
-            priceDebug,
-          );
-        } else if (priceSelector && priceSelector !== '.GO-Results-Price-Mid') {
-          console.log(
-            `[fetchActiveAds] row ${rowIndex} using fallback price selector`,
-            priceSelector,
-          );
-        }
-
-        console.log(`[fetchActiveAds] parsed row ${rowIndex}`, {
-          name,
-          price,
-          adUrl,
-          photoUrl,
-        });
+        const price = await adElement.evaluate((el, selectors) => {
+          for (const selector of selectors) {
+            const node = el.querySelector(selector);
+            if (!node) continue;
+            const text = (node as HTMLElement).innerText.trim();
+            if (text) return text;
+          }
+          return '';
+        }, priceSelectors);
 
         if (!price) {
-          console.log(`[fetchActiveAds] skip row ${rowIndex}: missing price`);
           continue;
         }
 
         if (!adUrl) {
-          console.log(`[fetchActiveAds] skip row ${rowIndex}: missing adUrl`);
           continue;
         }
         const adId = adUrl.split('=')[1] ?? '';
         if (price === 'PRODANO') {
-          console.log(`[fetchActiveAds] skip row ${rowIndex}: marked PRODANO`);
           continue;
         }
 
         adData.push({ name, price, photoUrl: photoUrl ?? '', adUrl, adId });
-        console.log(`[fetchActiveAds] added row ${rowIndex}: adId=${adId}`);
-      } catch (error) {
-        console.log(
-          `[fetchActiveAds] error row ${rowIndex} on page ${pageIndex}`,
-          error,
-        );
+      } catch {
         continue;
       }
     }
@@ -149,14 +92,9 @@ export async function fetchActiveAds(
     );
     if (!nextPageUrl) break;
 
-    console.log(
-      `[fetchActiveAds] navigating from page ${pageIndex} to next page`,
-      nextPageUrl,
-    );
     await page.goto(nextPageUrl);
     await page.waitForSelector(RESULTS_ROW_SELECTOR);
     resultRows = await page.$$(RESULTS_ROW_SELECTOR);
-    pageIndex += 1;
   }
 
   await browser.close();
