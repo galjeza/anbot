@@ -7,11 +7,24 @@ import { getAdImagesDirectory, downloadImage, wait } from '../utils/utils.js';
 import { AVTONETEDITPREFIX, AVTONET_IMAGES_PREFIX } from '../utils/constants';
 import { solveCaptcha } from './solve-captcha.js';
 
-export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
+export const getCarData = async (
+  browser,
+  adId,
+  hdImages,
+  adType = 'car',
+  isTestMode = false,
+) => {
   const userDataPath = app.getPath('userData');
   const [page] = await browser.pages();
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;
-  await page.goto(`${AVTONETEDITPREFIX}${adId}`, { timeout: 0 });
+  console.log('[getCarData] Start', {
+    adId,
+    adType,
+    hdImages,
+    isTestMode,
+    editUrl,
+  });
+  await page.goto(editUrl, { timeout: 0 });
   await page.waitForSelector('button[name=ADVIEW]', { timeout: 0 });
   await wait(3);
 
@@ -21,6 +34,7 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
       value: textarea.value,
     })),
   );
+  console.log('[getCarData] Textareas scraped', { count: textAreas.length });
 
   const checkboxes = await page.$$eval('input[type=checkbox]', (inputs) =>
     inputs.map((input) => {
@@ -35,17 +49,21 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
       };
     }),
   );
+  console.log('[getCarData] Checkboxes scraped', { count: checkboxes.length });
 
   try {
     const totalCheckboxes = checkboxes.length;
-    const brandCompat = checkboxes.filter((c) => c.name.startsWith('opombeznamka|'));
+    const brandCompat = checkboxes.filter((c) =>
+      c.name.startsWith('opombeznamka|'),
+    );
     const brandCompatSample = brandCompat
       .slice(0, 10)
       .map((c) => `${c.name.split('|')[1]}=${c.value}`);
-    console.log(
-      '[Scrape] Checkboxes:',
-      { total: totalCheckboxes, brandCompatCount: brandCompat.length, brandCompatSample },
-    );
+    console.log('[Scrape] Checkboxes:', {
+      total: totalCheckboxes,
+      brandCompatCount: brandCompat.length,
+      brandCompatSample,
+    });
   } catch (e) {
     console.log('[Scrape] Checkbox logging failed', e);
   }
@@ -56,6 +74,7 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
       value: select.value,
     })),
   );
+  console.log('[getCarData] Selects scraped', { count: selects.length });
 
   const inputs = await page.$$eval('input', (inputs) =>
     inputs.map((input) => ({
@@ -63,10 +82,13 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
       value: input.value,
     })),
   );
+  console.log('[getCarData] Inputs scraped', { count: inputs.length });
 
   // Prefer reading the HTML description from the textarea that CKEditor binds to
   // instead of assuming the first iframe on the page is the editor.
-  const htmlOpisField = textAreas.find((textarea) => textarea.name === 'opombe');
+  const htmlOpisField = textAreas.find(
+    (textarea) => textarea.name === 'opombe',
+  );
   const htmlOpis = htmlOpisField ? htmlOpisField.value : null;
 
   console.log(
@@ -108,37 +130,55 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
   const priceField = inputs.find((input) => input.name === 'cena');
   const letoRegField = carData.find((data) => data.name === 'letoReg');
 
-  if (priceField) {
+  if (!isTestMode && priceField) {
     const originalPrice = parseInt(priceField.value) || 1000;
     const newPrice = Math.max(100, originalPrice + randomPriceOffset());
+    console.log('[getCarData] Adjusting price', { originalPrice, newPrice });
     await page.click('input[name="cena"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="cena"]', newPrice.toString());
+  } else if (isTestMode && priceField) {
+    console.log('[Test Mode] Skipping price update', {
+      currentPrice: priceField.value,
+    });
   }
 
-  if (letoRegField) {
-    const originalYear = letoRegField.value;
+  if (!isTestMode && letoRegField) {
     const newYear = randomRegistrationYear();
+    console.log('[getCarData] Adjusting registration year', {
+      originalYear: letoRegField.value,
+      newYear,
+    });
     await page.click('input[name="letoReg"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="letoReg"]', newYear);
+  } else if (isTestMode && letoRegField) {
+    console.log('[Test Mode] Skipping registration year update', {
+      currentYear: letoRegField.value,
+    });
   }
 
-  await wait(3);
-
-  await solveCaptcha(page);
-
-  await page.click('button[name=ADVIEW]');
-  await wait(3);
+  if (isTestMode) {
+    console.log('[Test Mode] Skipping edit submit on old ad');
+  } else {
+    console.log('[getCarData] Submitting edit form');
+    await wait(3);
+    await solveCaptcha(page);
+    await page.click('button[name=ADVIEW]');
+    await wait(3);
+  }
   // -------------------------------------------------------------------------
 
+  console.log('[getCarData] Navigating to images page');
   await page.goto(`${AVTONET_IMAGES_PREFIX}${adId}`, { timeout: 0 });
   const images = await page.$$eval('img', (imgs) => imgs.map((img) => img.src));
   let adImages = images.filter((img) => img.includes('images.avto.net'));
+  console.log('[getCarData] Found image URLs', { count: adImages.length });
   adImages = adImages.map((img) => img.replace('_160', ''));
   console.log('- Found images: ', adImages);
   if (hdImages) {
     adImages = adImages.map((img) => img.replace('.jpg', '_HD.jpg'));
+    console.log('[getCarData] Using HD image URLs');
   }
 
   carData.push({ name: 'images', value: adImages });
@@ -146,6 +186,9 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
   const adImagesDirectory = getAdImagesDirectory(carData, userDataPath, adType);
   carData.imagePath = adImagesDirectory;
   if (!fs.existsSync(adImagesDirectory)) {
+    console.log('[getCarData] Creating images directory', {
+      path: adImagesDirectory,
+    });
     fs.mkdirSync(adImagesDirectory, { recursive: true });
 
     for (const [index, image] of adImages.entries()) {
@@ -165,5 +208,9 @@ export const getCarData = async (browser, adId, hdImages, adType = 'car') => {
     console.log('Images directory: ', adImagesDirectory);
   }
 
+  console.log('[getCarData] Done', {
+    fields: carData.length,
+    imageCount: adImages.length,
+  });
   return carData;
 };

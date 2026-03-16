@@ -5,11 +5,15 @@ export const selectBrand = async (page, carData, adType) => {
     'select[name=znamka] option',
     (options) => options.map((option) => option.value),
   );
+  console.log('[selectBrand] Brand options loaded', {
+    count: znamkaOptionsValues.length,
+  });
 
   let znamkaData = carData.find((data) => data.name === 'znamka');
   if (!znamkaData && adType === 'dostavna') {
     znamkaData = carData.find((data) => data.name === 'znamkaTEMP');
     if (znamkaData) {
+      console.log('[selectBrand] Using znamkaTEMP for dostavna');
     }
   }
 
@@ -17,8 +21,12 @@ export const selectBrand = async (page, carData, adType) => {
     throw new Error(`znamka field not found for adType: ${adType}`);
   }
 
+  console.log('[selectBrand] Selecting brand', { value: znamkaData.value });
   if (!znamkaOptionsValues.includes(znamkaData.value)) {
     const znamkaWithoutSpaces = znamkaData.value.replaceAll(' ', '');
+    console.log('[selectBrand] Normalized brand value', {
+      value: znamkaWithoutSpaces,
+    });
     await page.select('select[name=znamka]', znamkaWithoutSpaces);
   } else {
     await page.select('select[name=znamka]', znamkaData.value);
@@ -28,11 +36,16 @@ export const selectBrand = async (page, carData, adType) => {
 };
 
 export const resolveModelValue = (carData, adType, modelRelatedFields) => {
+  console.log('[resolveModelValue] Start', {
+    adType,
+    modelRelatedCount: modelRelatedFields.length,
+  });
   if (adType === 'dostavna') {
     const modelTEMPData = carData.find((data) => data.name === 'modelTEMP');
     if (!modelTEMPData) {
       const modelData = carData.find((data) => data.name === 'model');
       if (modelData) {
+        console.log('[resolveModelValue] Using model');
         return modelData.value;
       } else {
         throw new Error(
@@ -40,12 +53,14 @@ export const resolveModelValue = (carData, adType, modelRelatedFields) => {
         );
       }
     }
+    console.log('[resolveModelValue] Using modelTEMP');
     return modelTEMPData.value;
   } else {
     const modelData = carData.find((data) => data.name === 'model');
     if (!modelData) {
       throw new Error('model field not found for car ad');
     }
+    console.log('[resolveModelValue] Using model');
     return modelData.value;
   }
 };
@@ -55,6 +70,9 @@ export const selectModel = async (page, carModel) => {
     'select[name=model] option',
     (options) => options.map((option) => option.value),
   );
+  console.log('[selectModel] Model options loaded', {
+    count: modelOptionsValues.length,
+  });
 
   const normalizeModelValue = (value) =>
     String(value || '')

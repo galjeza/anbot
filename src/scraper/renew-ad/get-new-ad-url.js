@@ -1,4 +1,5 @@
 export const getNewAdUrl = (adType) => {
+  console.log('[getNewAdUrl] Resolving URL', { adType });
   switch (adType) {
     case 'car':
       return 'https://www.avto.net/_2016mojavtonet/ad_select_rubric_icons.asp?SID=10000';

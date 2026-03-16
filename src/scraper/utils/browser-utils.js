@@ -13,18 +13,11 @@ async function getUsersChromePath() {
 }
 
 export async function setupBrowser() {
-  const chromePath = await getUsersChromePath();
+  // const chromePath = await getUsersChromePath();
 
-  const browser = await puppeteer.launch({
-    executablePath: chromePath,
-    headless: false,
-    timeout: 6000000,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--window-position=9999,9999',
-    ],
-    protocolTimeout: 6000000,
+  const browser = await puppeteer.connect({
+    browserWSEndpoint:
+      'wss://connect.steel.dev?apiKey=ste-7BIdDYwyeapWeXOhfFhsRXaPjNFOecYzjLIBHquwkbOob7dWYLSqzH8jmQNvprHVmDF1gAREUuifoVlN5JypA7jvzrrzUFIJWQQ',
   });
 
   return browser;

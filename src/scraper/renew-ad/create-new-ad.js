@@ -16,18 +16,24 @@ import {
 } from './fill-form-fields.js';
 
 export const createNewAd = async (browser, carData, adType) => {
+  console.log('[createNewAd] Start', { adType, fields: carData.length });
   const modelRelatedFields = carData.filter(
     (data) =>
       data.name.toLowerCase().includes('model') ||
       data.name.toLowerCase().includes('tip') ||
       data.name.toLowerCase().includes('type'),
   );
+  console.log('[createNewAd] Model-related fields', {
+    count: modelRelatedFields.length,
+  });
 
   const newAdUrl = getNewAdUrl(adType);
+  console.log('[createNewAd] New ad URL', { newAdUrl });
 
   const [page] = await browser.pages();
   await page.goto(newAdUrl);
   if (adType !== 'platisca') {
+    console.log('[createNewAd] Waiting for brand selector');
     await page.waitForSelector('select[name=znamka]', { timeout: 0 });
 
     await selectBrand(page, carData, adType);
@@ -37,16 +43,21 @@ export const createNewAd = async (browser, carData, adType) => {
     console.log('Resolved model value: ', carModel);
 
     await selectModel(page, carModel);
+    console.log('[createNewAd] Selected model');
 
     await page.select(
       'select[name=oblika]',
       carData.find((data) => data.name === 'oblika').value,
     );
+    console.log('[createNewAd] Selected body type');
 
     await setRegistrationMonthYear(page, carData);
+    console.log('[createNewAd] Set registration month/year');
 
     await setFuelType(page, carData);
+    console.log('[createNewAd] Set fuel type');
     await page.click('button[name="potrdi"]');
+    console.log('[createNewAd] Confirmed step 1');
 
     await page.waitForTimeout(5000);
 
@@ -56,7 +67,10 @@ export const createNewAd = async (browser, carData, adType) => {
       });
 
       await page.click('.supurl');
+      console.log('[createNewAd] Clicked supurl');
     }
+  } else {
+    console.log('[createNewAd] Skipping brand/model for platisca');
   }
 
   await page.waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
@@ -86,7 +100,15 @@ export const createNewAd = async (browser, carData, adType) => {
     const isChecked = await page.$eval('#VINobjavi', (el) => el && el.checked);
 
     if (shouldBeChecked !== isChecked) {
+      console.log('[createNewAd] Toggling VIN visibility', {
+        shouldBeChecked,
+        isChecked,
+      });
       await page.click('#VINobjavi');
+    } else {
+      console.log('[createNewAd] VIN visibility already correct', {
+        shouldBeChecked,
+      });
     }
   }
 
@@ -94,4 +116,5 @@ export const createNewAd = async (browser, carData, adType) => {
   console.log('Captcha solved');
 
   await page.click('button[name="EDITAD"]');
+  console.log('[createNewAd] Submitted new ad');
 };

@@ -1,6 +1,7 @@
 import { wait } from '../utils/utils.js';
 
 export const fillWysiwygOpis = async (page, carData) => {
+  console.log('[fillWysiwygOpis] Start');
   const source =
     carData.find((data) => data.name === 'htmlOpis') ||
     carData.find((data) => data.name === 'opombe');
@@ -43,7 +44,11 @@ export const fillWysiwygOpis = async (page, carData) => {
 };
 
 export const fillCheckboxesFromData = async (page, carData) => {
+  console.log('[fillCheckboxesFromData] Start');
   const checkboxes = await page.$$('input[type=checkbox]');
+  console.log('[fillCheckboxesFromData] Checkbox count', {
+    count: checkboxes.length,
+  });
   for (const checkbox of checkboxes) {
     const meta = await checkbox.evaluate((node) => ({
       name: node.name,
@@ -90,7 +95,9 @@ export const fillCheckboxesFromData = async (page, carData) => {
 };
 
 export const fillInputsFromData = async (page, carData) => {
+  console.log('[fillInputsFromData] Start');
   const inputs = await page.$$('input[type=text]');
+  console.log('[fillInputsFromData] Input count', { count: inputs.length });
   for (const input of inputs) {
     try {
       const name = await input.evaluate((node) => node.name);
@@ -106,7 +113,9 @@ export const fillInputsFromData = async (page, carData) => {
 };
 
 export const fillSelectsFromData = async (page, carData) => {
+  console.log('[fillSelectsFromData] Start');
   const selects = await page.$$('select');
+  console.log('[fillSelectsFromData] Select count', { count: selects.length });
   for (const select of selects) {
     try {
       const name = await select.evaluate((node) => node.name);
@@ -121,7 +130,11 @@ export const fillSelectsFromData = async (page, carData) => {
 };
 
 export const fillTextareasFromData = async (page, carData) => {
+  console.log('[fillTextareasFromData] Start');
   const textareas = await page.$$('textarea');
+  console.log('[fillTextareasFromData] Textarea count', {
+    count: textareas.length,
+  });
   for (const textarea of textareas) {
     try {
       const name = await textarea.evaluate((node) => node.name);

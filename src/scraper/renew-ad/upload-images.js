@@ -8,9 +8,11 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
   const userDataPath = app.getPath('userData');
   const maxRetries = 3;
   let retryCount = 0;
+  console.log('[uploadImages] Start', { adType, maxRetries });
 
   while (retryCount < maxRetries) {
     try {
+      console.log('[uploadImages] Attempt', { attempt: retryCount + 1 });
       let imagesUploadPage = await browser
         .pages()
         .then((pages) => pages[pages.length - 1]);
@@ -27,6 +29,7 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
         const element = await imagesUploadPage.$(selector);
         if (element) {
           foundSelector = true;
+          console.log('[uploadImages] Found selector', { selector });
           break;
         }
       }
@@ -48,6 +51,9 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
         userDataPath,
         adType,
       );
+      console.log('[uploadImages] Images directory', {
+        path: adImagesDirectory,
+      });
 
       // Get all jpg files in the directory and sort them naturally
       const imageFiles = fs
@@ -59,6 +65,9 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
           const numB = parseInt(b.match(/\d+/)?.[0] || '0');
           return numA - numB;
         });
+      console.log('[uploadImages] Files to upload', {
+        count: imageFiles.length,
+      });
 
       for (const imageFile of imageFiles) {
         await wait(3);
@@ -80,22 +89,30 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
         const imagePath = path.join(adImagesDirectory, imageFile);
 
         if (!fs.existsSync(imagePath)) {
+          console.log('[uploadImages] File missing, skipping', { imageFile });
           continue;
         }
 
+        console.log('[uploadImages] Uploading file', { imageFile });
         await fileInput.uploadFile(imagePath);
         await wait(2);
 
         const addPhotoButtons = await imagesUploadPage.$$('.ButtonAddPhoto');
         if (addPhotoButtons.length > 0) {
+          console.log('[uploadImages] Clicking add photo button');
           await addPhotoButtons[0].click().catch(() => {});
           await wait(4);
         }
       }
 
+      console.log('[uploadImages] Upload complete');
       break;
     } catch (error) {
       retryCount++;
+      console.log('[uploadImages] Upload attempt failed', {
+        error: error.message,
+        retryCount,
+      });
 
       if (retryCount === maxRetries) {
         throw new Error(
