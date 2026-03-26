@@ -6,6 +6,8 @@ const STEEL_API_KEY =
   process.env.STEEL_API_KEY ||
   'ste-Qvl7pIHbKQWqKRpQQjyT96CK4BtJLnfn5w9QDMldrr4hX6MWZ6rbGXcQTRDvrILhC9fjkBpCFuzvoB31U21aX1kOHORkkNVUlwe';
 
+const STEEL_SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+
 const client = new Steel({
   steelAPIKey: STEEL_API_KEY,
 });
@@ -16,7 +18,12 @@ export async function setupBrowser() {
     // each one adds cold-start latency
     useProxy: true,
     solveCaptcha: true,
-    sessionTimeout: 5 * 60 * 1000, // keep it short, release explicitly
+    sessionTimeout: STEEL_SESSION_TIMEOUT_MS,
+  });
+
+  console.log('[Browser] Steel session created', {
+    sessionId: session.id,
+    sessionTimeoutMs: STEEL_SESSION_TIMEOUT_MS,
   });
 
   try {
