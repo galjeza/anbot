@@ -108,3 +108,29 @@ button:hover {
   width: 100%;
   margin-top: 8px;
 }
+
+
+.spread {
+  justify-content: space-between;
+}
+
+.error {
+  color: #fca5a5;
+  margin-top: 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.debug-log {
+  margin-top: 8px;
+  background: #030712;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #d1d5db;
+  white-space: pre-wrap;
+}

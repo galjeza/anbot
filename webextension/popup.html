@@ -28,6 +28,7 @@
         </form>
 
         <p id="subscription-info" class="muted"></p>
+        <p id="error-text" class="error" hidden></p>
       </section>
 
       <section class="card">
@@ -51,8 +52,12 @@
       </section>
 
       <section class="card">
-        <h2>Status</h2>
+        <div class="row spread">
+          <h2>Status</h2>
+          <button id="clear-logs" type="button">Počisti loge</button>
+        </div>
         <p id="status-text" class="muted">Ni aktivnega obnavljanja.</p>
+        <pre id="debug-log" class="debug-log"></pre>
       </section>
     </main>
 

@@ -1,6 +1,7 @@
 const state = {
   ads: [],
   selectedAds: new Set(),
+  debugLog: [],
 };
 
 const els = {
@@ -9,15 +10,61 @@ const els = {
   password: document.getElementById('password'),
   refreshSubscription: document.getElementById('refresh-subscription'),
   subscriptionInfo: document.getElementById('subscription-info'),
+  errorText: document.getElementById('error-text'),
   adType: document.getElementById('ad-type'),
   loadAds: document.getElementById('load-ads'),
   pauseMinutes: document.getElementById('pause-minutes'),
   adsList: document.getElementById('ads-list'),
   startRenewal: document.getElementById('start-renewal'),
   statusText: document.getElementById('status-text'),
+  debugLog: document.getElementById('debug-log'),
+  clearLogs: document.getElementById('clear-logs'),
 };
 
+function logLocal(message, context = null) {
+  const line = context ? `${message} ${JSON.stringify(context)}` : message;
+  console.log('[Popup]', line);
+}
+
+function setError(message) {
+  if (!message) {
+    els.errorText.hidden = true;
+    els.errorText.textContent = '';
+    return;
+  }
+
+  els.errorText.hidden = false;
+  els.errorText.textContent = message;
+}
+
+function formatError(error) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function renderDebugLog() {
+  if (!state.debugLog.length) {
+    els.debugLog.textContent = 'Ni logov.';
+    return;
+  }
+
+  els.debugLog.textContent = state.debugLog
+    .slice(-150)
+    .map((item) => {
+      const context = item.context ? ` ${JSON.stringify(item.context)}` : '';
+      return `[${item.ts}] [${item.level}] ${item.message}${context}`;
+    })
+    .join('\n');
+
+  els.debugLog.scrollTop = els.debugLog.scrollHeight;
+}
+
 function callBackground(type, payload = {}) {
+  logLocal('Sending message', { type, payload });
+
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ type, payload }, (response) => {
       if (chrome.runtime.lastError) {
@@ -119,7 +166,14 @@ async function loadUserData() {
   renderSubscriptionInfo(userData);
 }
 
+async function loadDebugLog() {
+  const debugLog = await callBackground('get-debug-log');
+  state.debugLog = debugLog;
+  renderDebugLog();
+}
+
 async function init() {
+  setError('');
   await loadUserData();
 
   const currentUser = await callBackground('get-user-data');
@@ -127,64 +181,108 @@ async function init() {
     try {
       const refreshedUser = await callBackground('refresh-subscription');
       renderSubscriptionInfo(refreshedUser);
-    } catch (_error) {
-      // Keep existing data; user can retry manually with "Osveži račun".
+    } catch (error) {
+      setError(`Osvežitev računa ni uspela: ${formatError(error)}`);
     }
   }
 
   const renewalState = await callBackground('get-renewal-state');
   renderRenewalState(renewalState);
   renderAds();
+  await loadDebugLog();
 }
 
 els.configForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  setError('');
 
-  const payload = {
-    email: els.email.value.trim(),
-    password: els.password.value,
-  };
+  try {
+    const payload = {
+      email: els.email.value.trim(),
+      password: els.password.value,
+    };
 
-  await callBackground('save-user-data', payload);
-  const userData = await callBackground('get-user-data');
-  renderSubscriptionInfo(userData);
+    await callBackground('save-user-data', payload);
+    const userData = await callBackground('get-user-data');
+    renderSubscriptionInfo(userData);
+  } catch (error) {
+    setError(`Shranjevanje ni uspelo: ${formatError(error)}`);
+  }
 });
 
 els.refreshSubscription.addEventListener('click', async () => {
-  const userData = await callBackground('refresh-subscription');
-  renderSubscriptionInfo(userData);
+  setError('');
+  try {
+    const userData = await callBackground('refresh-subscription');
+    renderSubscriptionInfo(userData);
+  } catch (error) {
+    setError(`Osvežitev računa ni uspela: ${formatError(error)}`);
+  }
 });
 
 els.loadAds.addEventListener('click', async () => {
-  const adType = els.adType.value;
-  const ads = await callBackground('fetch-active-ads', { adType });
-  state.ads = ads;
-  state.selectedAds = new Set(ads.map((ad) => ad.adId));
-  renderAds();
+  setError('');
+  els.statusText.textContent = 'Nalagam oglase...';
+
+  try {
+    const adType = els.adType.value;
+    const ads = await callBackground('fetch-active-ads', { adType });
+    state.ads = ads;
+    state.selectedAds = new Set(ads.map((ad) => ad.adId));
+    renderAds();
+    els.statusText.textContent = `Naloženih oglasov: ${ads.length}`;
+  } catch (error) {
+    const message = `Nalagam oglase ni uspelo: ${formatError(error)}`;
+    setError(message);
+    els.statusText.textContent = 'Napaka pri nalaganju oglasov.';
+  }
 });
 
 els.startRenewal.addEventListener('click', async () => {
-  const selected = state.ads.filter((ad) => state.selectedAds.has(ad.adId));
-  if (!selected.length) {
-    els.statusText.textContent = 'Izberi vsaj en oglas.';
-    return;
+  setError('');
+
+  try {
+    const selected = state.ads.filter((ad) => state.selectedAds.has(ad.adId));
+    if (!selected.length) {
+      setError('Izberi vsaj en oglas.');
+      return;
+    }
+
+    await callBackground('start-renewal', {
+      ads: selected,
+      pauseMinutes: Number(els.pauseMinutes.value) || 0,
+      adType: els.adType.value,
+    });
+
+    els.statusText.textContent = 'Obnavljanje zagnano...';
+  } catch (error) {
+    setError(`Zagon obnavljanja ni uspel: ${formatError(error)}`);
   }
+});
 
-  await callBackground('start-renewal', {
-    ads: selected,
-    pauseMinutes: Number(els.pauseMinutes.value) || 0,
-    adType: els.adType.value,
-  });
-
-  els.statusText.textContent = 'Obnavljanje zagnano...';
+els.clearLogs.addEventListener('click', async () => {
+  setError('');
+  try {
+    await callBackground('clear-debug-log');
+    state.debugLog = [];
+    renderDebugLog();
+  } catch (error) {
+    setError(`Brisanje logov ni uspelo: ${formatError(error)}`);
+  }
 });
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'renewal-state-updated') {
     renderRenewalState(message.payload);
   }
+
+  if (message.type === 'debug-log-updated') {
+    state.debugLog.push(message.payload);
+    renderDebugLog();
+  }
 });
 
 init().catch((error) => {
-  els.statusText.textContent = error.message;
+  setError(`Inicializacija ni uspela: ${formatError(error)}`);
+  logLocal('Init failed', { error: formatError(error) });
 });

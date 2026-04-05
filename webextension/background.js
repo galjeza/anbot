@@ -30,6 +30,33 @@ const DEFAULT_RENEWAL_STATE = {
   errors: [],
 };
 
+const MAX_DEBUG_LOG_ITEMS = 500;
+
+function makeLogEntry(level, message, context = null) {
+  return {
+    ts: new Date().toISOString(),
+    level,
+    message,
+    context,
+  };
+}
+
+async function appendDebugLog(level, message, context = null) {
+  const entry = makeLogEntry(level, message, context);
+  const current = await getStorageValue('debugLog', []);
+  const next = [...current, entry].slice(-MAX_DEBUG_LOG_ITEMS);
+  await setStorageValue('debugLog', next);
+  chrome.runtime.sendMessage({ type: 'debug-log-updated', payload: entry });
+
+  if (level === 'error') {
+    console.error('[AvtonetBot]', message, context ?? '');
+  } else if (level === 'warn') {
+    console.warn('[AvtonetBot]', message, context ?? '');
+  } else {
+    console.log('[AvtonetBot]', message, context ?? '');
+  }
+}
+
 async function getStorageValue(key, fallbackValue) {
   const data = await chrome.storage.local.get(key);
   return data[key] ?? fallbackValue;
@@ -110,6 +137,7 @@ function parseAdsFromHtml(html) {
 }
 
 async function fetchActiveAds(adType, brokerId) {
+  await appendDebugLog('info', 'fetchActiveAds called', { adType, hasBrokerId: Boolean(brokerId) });
   const baseUrl = AVTONET_URLS[adType];
   if (!baseUrl) {
     throw new Error('Neznan tip oglasov.');
@@ -124,17 +152,20 @@ async function fetchActiveAds(adType, brokerId) {
 
   while (url && !visited.has(url)) {
     visited.add(url);
+    await appendDebugLog('info', 'Fetching ads page', { url });
     const response = await fetch(url, { method: 'GET' });
     if (!response.ok) {
       throw new Error(`Napaka pri nalaganju oglasov (${response.status}).`);
     }
 
     const html = await response.text();
+    await appendDebugLog('info', 'Fetched ads page HTML', { url, length: html.length });
     const { ads, nextPageUrl } = parseAdsFromHtml(html);
     collected.push(...ads);
     url = nextPageUrl;
   }
 
+  await appendDebugLog('info', 'fetchActiveAds completed', { total: collected.length });
   return collected;
 }
 
@@ -158,6 +189,7 @@ function waitForTabComplete(tabId) {
 }
 
 async function updateRenewalState(partial) {
+  await appendDebugLog('info', 'Renewal state updated', partial);
   const current = await getStorageValue('renewalState', DEFAULT_RENEWAL_STATE);
   const nextState = { ...current, ...partial };
   await setStorageValue('renewalState', nextState);
@@ -165,6 +197,7 @@ async function updateRenewalState(partial) {
 }
 
 async function runRenewalForAd(ad, userData, adType) {
+  await appendDebugLog('info', 'runRenewalForAd start', { adId: ad.adId, adType });
   const tab = await chrome.tabs.create({
     url: ad.adUrl,
     active: false,
@@ -176,6 +209,7 @@ async function runRenewalForAd(ad, userData, adType) {
 
   try {
     await waitForTabComplete(tab.id);
+    await appendDebugLog('info', 'Sending renew message to content script', { tabId: tab.id, adId: ad.adId });
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: 'renew-current-ad',
       payload: {
@@ -188,14 +222,18 @@ async function runRenewalForAd(ad, userData, adType) {
     });
 
     if (!response?.ok) {
+      await appendDebugLog('error', 'Content script returned error', { adId: ad.adId, response });
       throw new Error(response?.error ?? 'Neznana napaka pri obnavljanju.');
     }
+    await appendDebugLog('info', 'runRenewalForAd success', { adId: ad.adId });
   } finally {
     await chrome.tabs.remove(tab.id);
+    await appendDebugLog('info', 'Closed renewal tab', { tabId: tab.id, adId: ad.adId });
   }
 }
 
 async function startRenewal(ads, pauseMinutes, adType) {
+  await appendDebugLog('info', 'startRenewal called', { total: ads.length, pauseMinutes, adType });
   const userData = await getStorageValue('userData', DEFAULT_USER_DATA);
   await updateRenewalState({
     ...DEFAULT_RENEWAL_STATE,
@@ -226,6 +264,7 @@ async function startRenewal(ads, pauseMinutes, adType) {
         await sleep(pauseMinutes * 60 * 1000);
       }
     } catch (error) {
+      await appendDebugLog('error', 'Error while renewing ad', { adId: ad.adId, error: error instanceof Error ? error.message : String(error) });
       const errors = await getStorageValue('renewalState', DEFAULT_RENEWAL_STATE);
       const nextErrors = [
         ...errors.errors,
@@ -247,9 +286,11 @@ async function startRenewal(ads, pauseMinutes, adType) {
     currentAdId: null,
     message: 'Obnavljanje zaključeno.',
   });
+  await appendDebugLog('info', 'startRenewal finished', { total: ads.length });
 }
 
 async function refreshSubscription() {
+  await appendDebugLog('info', 'refreshSubscription called');
   const userData = await getStorageValue('userData', DEFAULT_USER_DATA);
   if (!userData.email) {
     return userData;
@@ -272,6 +313,7 @@ async function refreshSubscription() {
   };
 
   await setStorageValue('userData', merged);
+  await appendDebugLog('info', 'refreshSubscription success', { brokerId: merged.brokerId, hdImages: merged.hdImages });
   return merged;
 }
 
@@ -282,9 +324,11 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 
   await setStorageValue('renewalState', DEFAULT_RENEWAL_STATE);
+  await setStorageValue('debugLog', []);
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  appendDebugLog('info', 'Incoming runtime message', { type: message?.type }).catch(() => undefined);
   (async () => {
     if (message.type === 'get-user-data') {
       const userData = await getStorageValue('userData', DEFAULT_USER_DATA);
@@ -338,8 +382,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return;
     }
 
+
+    if (message.type === 'get-debug-log') {
+      const debugLog = await getStorageValue('debugLog', []);
+      sendResponse({ ok: true, data: debugLog });
+      return;
+    }
+
+    if (message.type === 'clear-debug-log') {
+      await setStorageValue('debugLog', []);
+      sendResponse({ ok: true, data: [] });
+      return;
+    }
+
     sendResponse({ ok: false, error: 'Unknown message type.' });
-  })().catch((error) => {
+  })().catch(async (error) => {
+    await appendDebugLog('error', 'Runtime message handler failed', {
+      type: message?.type,
+      error: error instanceof Error ? error.message : String(error),
+    });
     sendResponse({
       ok: false,
       error: error instanceof Error ? error.message : String(error),

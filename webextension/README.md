@@ -28,3 +28,10 @@ Ta mapa vsebuje prepis aplikacije v Chrome WebExtension (Manifest V3), brez Pupp
 
 - Ker je flow odvisen od konkretnega HTML/CSS na `avto.net`, se lahko selektorji spremenijo. V tem primeru je potrebno posodobiti `content-script.js` in parser v `background.js`.
 - Obnovitev uporablja navadno avtomatizacijo klikov in inputov, zato je priporočljivo testiranje na manjšem setu oglasov.
+
+
+## Debug
+
+- Logi so vidni direktno v popupu v razdelku **Status** (debug log).
+- Dodatni logi so v Chrome DevTools za service worker (`chrome://extensions` -> Avtonet Bot -> Service worker).
+- Napake pri akcijah (npr. `Naloži oglase`) se prikažejo direktno v popupu.
