@@ -82,8 +82,14 @@ export const createNewAd = async (browser, carData, adType) => {
     visible: true,
     timeout: SLOW_TIMEOUT_MS,
   });
+
+  await page.reload();
   console.log('Cena field found');
 
+  await page.waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
+    visible: true,
+    timeout: SLOW_TIMEOUT_MS,
+  });
   await fillWysiwygOpis(page, carData);
   console.log('Filled wysiwyg opis');
 

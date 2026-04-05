@@ -1,6 +1,7 @@
 import { wait } from '../utils/utils.js';
 
 export const loginToAvtonet = async (browser, email, password) => {
+  const DEFAULT_TIMEOUT_MS = 60 * 1000;
   const [page] = await browser.pages();
   const COOKIE_ACCEPT_SELECTOR = '#CybotCookiebotDialogBodyLevelButtonAccept';
   const LOGIN_URL = 'https://www.avto.net/_2016mojavtonet/';
@@ -13,7 +14,7 @@ export const loginToAvtonet = async (browser, email, password) => {
   const acceptCookies = async () => {
     try {
       await page.waitForSelector(COOKIE_ACCEPT_SELECTOR, {
-        timeout: 15000,
+        timeout: DEFAULT_TIMEOUT_MS,
       });
       await page.click(COOKIE_ACCEPT_SELECTOR);
       console.log('[Login] Accepted cookies');

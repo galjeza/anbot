@@ -11,6 +11,7 @@ export interface ActiveAd {
 
 const RESULTS_ROW_SELECTOR = '.GO-Results-Row';
 const NEXT_BUTTON_SELECTOR = '.GO-Rounded-R';
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 const PRICE_SELECTORS = [
   '.GO-Results-Price-Mid',
@@ -37,7 +38,9 @@ export async function fetchActiveAds(
     const adData: ActiveAd[] = [];
 
     while (true) {
-      await page.waitForSelector(RESULTS_ROW_SELECTOR, { timeout: 15_000 });
+      await page.waitForSelector(RESULTS_ROW_SELECTOR, {
+        timeout: DEFAULT_TIMEOUT_MS,
+      });
       await page.waitForFunction(
         (selector) => {
           const images = Array.from(
@@ -49,7 +52,7 @@ export async function fetchActiveAds(
               !img.getAttribute('src')?.startsWith('data:'),
           );
         },
-        { timeout: 30_000 },
+        { timeout: DEFAULT_TIMEOUT_MS },
         RESULTS_ROW_SELECTOR,
       );
 
