@@ -86,11 +86,15 @@ async function fetchActiveAds(adType, brokerId) {
     const visited = new Set();
     const tab = await chrome.tabs.create({
         url,
-        active: false,
+        active: true,
     });
     if (!tab?.id) {
         throw new Error('Ne morem odpreti zavihka za branje oglasov.');
     }
+    await appendDebugLog('info', 'Opened browser tab for active ads scraping', {
+        tabId: tab.id,
+        url,
+    });
     try {
         while (url && !visited.has(url)) {
             visited.add(url);
@@ -274,7 +278,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     await setStorageValue('debugLog', []);
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    appendDebugLog('info', 'Incoming runtime message', { type: message?.type }).catch(() => undefined);
     (async () => {
         if (message.type === 'get-user-data') {
             const userData = await getStorageValue('userData', DEFAULT_USER_DATA);
@@ -335,6 +338,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await appendDebugLog('error', 'Runtime message handler failed', {
             type: message?.type,
             error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
         });
         sendResponse({
             ok: false,
