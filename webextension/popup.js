@@ -7,7 +7,6 @@ const els = {
   configForm: document.getElementById('config-form'),
   email: document.getElementById('email'),
   password: document.getElementById('password'),
-  hdImages: document.getElementById('hdImages'),
   refreshSubscription: document.getElementById('refresh-subscription'),
   subscriptionInfo: document.getElementById('subscription-info'),
   adType: document.getElementById('ad-type'),
@@ -117,7 +116,6 @@ async function loadUserData() {
   const userData = await callBackground('get-user-data');
   els.email.value = userData.email ?? '';
   els.password.value = userData.password ?? '';
-  els.hdImages.checked = Boolean(userData.hdImages);
   renderSubscriptionInfo(userData);
 }
 
@@ -145,7 +143,6 @@ els.configForm.addEventListener('submit', async (event) => {
   const payload = {
     email: els.email.value.trim(),
     password: els.password.value,
-    hdImages: els.hdImages.checked,
   };
 
   await callBackground('save-user-data', payload);
