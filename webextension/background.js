@@ -115,7 +115,7 @@ async function fetchActiveAds(adType, brokerId) {
     throw new Error('Neznan tip oglasov.');
   }
   if (!brokerId) {
-    throw new Error('Broker ID ni nastavljen.');
+    throw new Error('Broker ID ni nastavljen. Klikni \"Osveži račun\" da se prenese iz backenda.');
   }
 
   let url = `${baseUrl}${encodeURIComponent(brokerId)}`;
@@ -293,8 +293,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     if (message.type === 'save-user-data') {
+      const existing = await getStorageValue('userData', DEFAULT_USER_DATA);
       const nextUserData = {
         ...DEFAULT_USER_DATA,
+        ...existing,
         ...message.payload,
       };
       await setStorageValue('userData', nextUserData);

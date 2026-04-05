@@ -7,7 +7,6 @@ const els = {
   configForm: document.getElementById('config-form'),
   email: document.getElementById('email'),
   password: document.getElementById('password'),
-  brokerId: document.getElementById('brokerId'),
   hdImages: document.getElementById('hdImages'),
   refreshSubscription: document.getElementById('refresh-subscription'),
   subscriptionInfo: document.getElementById('subscription-info'),
@@ -118,13 +117,23 @@ async function loadUserData() {
   const userData = await callBackground('get-user-data');
   els.email.value = userData.email ?? '';
   els.password.value = userData.password ?? '';
-  els.brokerId.value = userData.brokerId ?? '';
   els.hdImages.checked = Boolean(userData.hdImages);
   renderSubscriptionInfo(userData);
 }
 
 async function init() {
   await loadUserData();
+
+  const currentUser = await callBackground('get-user-data');
+  if (currentUser.email) {
+    try {
+      const refreshedUser = await callBackground('refresh-subscription');
+      renderSubscriptionInfo(refreshedUser);
+    } catch (_error) {
+      // Keep existing data; user can retry manually with "Osveži račun".
+    }
+  }
+
   const renewalState = await callBackground('get-renewal-state');
   renderRenewalState(renewalState);
   renderAds();
@@ -136,7 +145,6 @@ els.configForm.addEventListener('submit', async (event) => {
   const payload = {
     email: els.email.value.trim(),
     password: els.password.value,
-    brokerId: els.brokerId.value.trim(),
     hdImages: els.hdImages.checked,
   };
 

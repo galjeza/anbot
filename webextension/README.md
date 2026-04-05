@@ -4,8 +4,8 @@ Ta mapa vsebuje prepis aplikacije v Chrome WebExtension (Manifest V3), brez Pupp
 
 ## Kaj je preneseno iz desktop aplikacije
 
-- shranjevanje uporabnika (`email`, `password`, `brokerId`, `hdImages`) v `chrome.storage.local`
-- osveževanje podatkov o naročnini preko `avtonet-server.onrender.com`
+- shranjevanje uporabnika (`email`, `password`, `hdImages`) v `chrome.storage.local`
+- osveževanje podatkov o naročnini in `brokerId` preko `avtonet-server.onrender.com`
 - nalaganje aktivnih oglasov po tipih (`car`, `dostavna`, `platisca`)
 - izbor oglasov in pavza med posameznimi obnovami
 - sekvenčno obnavljanje oglasov z direktnim upravljanjem zavihkov in DOM-a
