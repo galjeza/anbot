@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="sl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avtonet Bot</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Avtonet Bot</h1>
+
+      <section class="card">
+        <h2>Konfiguracija</h2>
+        <form id="config-form">
+          <label>
+            Email
+            <input id="email" name="email" type="email" required />
+          </label>
+          <label>
+            Geslo
+            <input id="password" name="password" type="password" required />
+          </label>
+          <label>
+            Broker ID
+            <input id="brokerId" name="brokerId" type="text" required />
+          </label>
+          <label class="inline">
+            <input id="hdImages" name="hdImages" type="checkbox" />
+            HD slike
+          </label>
+          <div class="row">
+            <button type="submit">Shrani</button>
+            <button id="refresh-subscription" type="button">Osveži račun</button>
+          </div>
+        </form>
+
+        <p id="subscription-info" class="muted"></p>
+      </section>
+
+      <section class="card">
+        <h2>Oglasi</h2>
+        <div class="row">
+          <select id="ad-type">
+            <option value="car">Avtomobili</option>
+            <option value="dostavna">Dostavna vozila</option>
+            <option value="platisca">Platišča</option>
+          </select>
+          <button id="load-ads" type="button">Naloži oglase</button>
+        </div>
+
+        <label>
+          Pavza med oglasi (minute)
+          <input id="pause-minutes" type="number" min="0" value="60" />
+        </label>
+
+        <div id="ads-list" class="ads-list"></div>
+        <button id="start-renewal" type="button" class="full">Obnovi izbrane</button>
+      </section>
+
+      <section class="card">
+        <h2>Status</h2>
+        <p id="status-text" class="muted">Ni aktivnega obnavljanja.</p>
+      </section>
+    </main>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

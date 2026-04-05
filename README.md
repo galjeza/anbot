@@ -20,6 +20,10 @@
 
 </div>
 
+## Chrome Extension Rewrite
+
+A browser-native rewrite is available under [`webextension/`](webextension/README.md). It replaces Puppeteer-based orchestration with a Manifest V3 extension that controls Avto.net directly via tabs + content scripts.
+
 ## Install
 
 Clone the repo and install dependencies:
