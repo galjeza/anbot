@@ -35,3 +35,14 @@ Ta mapa vsebuje prepis aplikacije v Chrome WebExtension (Manifest V3), brez Pupp
 - Logi so vidni direktno v popupu v razdelku **Status** (debug log).
 - Dodatni logi so v Chrome DevTools za service worker (`chrome://extensions` -> Avtonet Bot -> Service worker).
 - Napake pri akcijah (npr. `Naloži oglase`) se prikažejo direktno v popupu.
+
+
+## TypeScript
+
+- Extension source code is in `webextension/src/*.ts`.
+- Built runtime files are emitted to `webextension/dist/*.js`.
+- Build + type-check command:
+
+```bash
+npx tsc -p webextension/tsconfig.json
+```

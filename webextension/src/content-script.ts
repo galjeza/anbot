@@ -1,13 +1,24 @@
-function sleep(ms) {
+export {};
+
+interface RenewPayload {
+  email: string;
+  password: string;
+}
+
+function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalize(text) {
+function normalize(text: string | null | undefined): string {
   return (text ?? '').trim().toLowerCase();
 }
 
-function findClickableByText(candidates, textMatchers) {
-  const elements = Array.from(document.querySelectorAll(candidates));
+function findClickableByText(
+  candidates: string,
+  textMatchers: string[],
+): HTMLElement | null {
+  const elements = Array.from(document.querySelectorAll<HTMLElement>(candidates));
+
   for (const element of elements) {
     const text = normalize(element.textContent);
     if (!text) {
@@ -23,9 +34,12 @@ function findClickableByText(candidates, textMatchers) {
   return null;
 }
 
-async function ensureLoggedIn(email, password) {
-  const emailInput = document.querySelector('input[type="email"], input[name*="mail" i]');
-  const passwordInput = document.querySelector('input[type="password"]');
+async function ensureLoggedIn(email: string, password: string): Promise<void> {
+  const emailInput = document.querySelector<HTMLInputElement>(
+    'input[type="email"], input[name*="mail" i]',
+  );
+  const passwordInput =
+    document.querySelector<HTMLInputElement>('input[type="password"]');
 
   if (!emailInput || !passwordInput) {
     return;
@@ -40,7 +54,7 @@ async function ensureLoggedIn(email, password) {
   passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
 
   const submitButton =
-    document.querySelector('button[type="submit"], input[type="submit"]') ||
+    document.querySelector<HTMLElement>('button[type="submit"], input[type="submit"]') ??
     findClickableByText('button, a, input[type="button"]', ['prijava', 'login']);
 
   if (submitButton) {
@@ -49,14 +63,14 @@ async function ensureLoggedIn(email, password) {
   }
 }
 
-async function clickRenewButton() {
+async function clickRenewButton(): Promise<void> {
   const renewButton =
     findClickableByText('button, a', [
       'obnovi',
       'podaljšaj',
       'ponovno objavi',
       'uredi oglas',
-    ]) || document.querySelector('a[href*="OddajaOglasa.asp" i]');
+    ]) ?? document.querySelector<HTMLElement>('a[href*="OddajaOglasa.asp" i]');
 
   if (!renewButton) {
     throw new Error('Ne najdem gumba za obnovo oglasa na strani.');
@@ -66,14 +80,14 @@ async function clickRenewButton() {
   await sleep(5000);
 }
 
-async function publishIfPossible() {
+async function publishIfPossible(): Promise<void> {
   const publishButton =
     findClickableByText('button, a, input[type="submit"]', [
       'objavi',
       'shrani',
       'potrdi',
       'nadaljuj',
-    ]) || document.querySelector('input[type="submit"]');
+    ]) ?? document.querySelector<HTMLElement>('input[type="submit"]');
 
   if (publishButton) {
     publishButton.click();
@@ -81,7 +95,7 @@ async function publishIfPossible() {
   }
 }
 
-async function renewCurrentAd(payload) {
+async function renewCurrentAd(payload: RenewPayload): Promise<{ ok: boolean }> {
   const { email, password } = payload;
 
   await ensureLoggedIn(email, password);
@@ -95,14 +109,14 @@ async function renewCurrentAd(payload) {
   return { ok: true };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
   if (message.type !== 'renew-current-ad') {
     return false;
   }
 
-  renewCurrentAd(message.payload)
+  renewCurrentAd((message.payload ?? {}) as RenewPayload)
     .then((result) => sendResponse(result))
-    .catch((error) => {
+    .catch((error: unknown) => {
       sendResponse({
         ok: false,
         error: error instanceof Error ? error.message : String(error),
