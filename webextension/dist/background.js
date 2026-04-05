@@ -69,50 +69,6 @@ function normalizeUrl(url) {
     }
     return `https://www.avto.net${url.startsWith('/') ? url : `/${url}`}`;
 }
-function parseAdsFromHtml(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const rows = Array.from(doc.querySelectorAll('.GO-Results-Row'));
-    const ads = rows
-        .map((row) => {
-        const photoEl = row.querySelector('.GO-Results-Photo');
-        if (!photoEl) {
-            return null;
-        }
-        const name = row.querySelector('.GO-Results-Naziv')?.textContent?.trim() ?? '';
-        const photoUrl = photoEl.querySelector('img')?.getAttribute('src') ?? '';
-        const adUrlRaw = photoEl.querySelector('a')?.getAttribute('href') ?? '';
-        const adUrl = normalizeUrl(adUrlRaw);
-        if (!adUrl) {
-            return null;
-        }
-        let price = '';
-        for (const selector of PRICE_SELECTORS) {
-            const value = row.querySelector(selector)?.textContent?.trim();
-            if (value) {
-                price = value;
-                break;
-            }
-        }
-        if (!price || price === 'PRODANO') {
-            return null;
-        }
-        const adId = adUrl.split('ID=')[1]?.split('&')[0] ?? '';
-        return {
-            name,
-            price,
-            photoUrl: normalizeUrl(photoUrl) ?? photoUrl,
-            adUrl,
-            adId,
-        };
-    })
-        .filter((item) => Boolean(item));
-    const nextPageLink = doc.querySelector('.GO-Rounded-R a')?.getAttribute('href');
-    return {
-        ads,
-        nextPageUrl: normalizeUrl(nextPageLink),
-    };
-}
 async function fetchActiveAds(adType, brokerId) {
     await appendDebugLog('info', 'fetchActiveAds called', {
         adType,
@@ -128,26 +84,38 @@ async function fetchActiveAds(adType, brokerId) {
     let url = `${baseUrl}${encodeURIComponent(brokerId)}`;
     const collected = [];
     const visited = new Set();
-    while (url && !visited.has(url)) {
-        visited.add(url);
-        await appendDebugLog('info', 'Fetching ads page', { url });
-        const response = await fetch(url, { method: 'GET' });
-        if (!response.ok) {
-            throw new Error(`Napaka pri nalaganju oglasov (${response.status}).`);
-        }
-        const html = await response.text();
-        await appendDebugLog('info', 'Fetched ads page HTML', {
-            url,
-            length: html.length,
-        });
-        const { ads, nextPageUrl } = parseAdsFromHtml(html);
-        collected.push(...ads);
-        url = nextPageUrl;
-    }
-    await appendDebugLog('info', 'fetchActiveAds completed', {
-        total: collected.length,
+    const tab = await chrome.tabs.create({
+        url,
+        active: false,
     });
-    return collected;
+    if (!tab?.id) {
+        throw new Error('Ne morem odpreti zavihka za branje oglasov.');
+    }
+    try {
+        while (url && !visited.has(url)) {
+            visited.add(url);
+            await appendDebugLog('info', 'Scraping ads page in content script', { url });
+            await waitForTabComplete(tab.id);
+            const pageResult = (await chrome.tabs.sendMessage(tab.id, {
+                type: 'scrape-active-ads-page',
+            }));
+            if (!pageResult) {
+                throw new Error('Ne morem prebrati oglasov iz strani.');
+            }
+            collected.push(...(pageResult.ads ?? []));
+            url = pageResult.nextPageUrl;
+            if (url && !visited.has(url)) {
+                await chrome.tabs.update(tab.id, { url });
+            }
+        }
+        await appendDebugLog('info', 'fetchActiveAds completed', {
+            total: collected.length,
+        });
+        return collected;
+    }
+    finally {
+        await chrome.tabs.remove(tab.id);
+    }
 }
 function waitForTabComplete(tabId) {
     return new Promise((resolve, reject) => {

@@ -5,6 +5,27 @@ interface RenewPayload {
   password: string;
 }
 
+interface AdItem {
+  name: string;
+  price: string;
+  photoUrl: string;
+  adUrl: string;
+  adId: string;
+}
+
+interface AdsPageResult {
+  ads: AdItem[];
+  nextPageUrl: string | null;
+}
+
+const PRICE_SELECTORS = [
+  '.GO-Results-Price-Mid',
+  '.GO-Results-Price-Mid-Akcija',
+  '.GO-Results-Price-TXT-Regular',
+  '.GO-Results-Price-TXT-AkcijaCena',
+  '.GO-Results-Price',
+];
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -32,6 +53,72 @@ function findClickableByText(
   }
 
   return null;
+}
+
+function normalizeUrl(url: string | null | undefined): string | null {
+  if (!url) {
+    return null;
+  }
+
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  return `https://www.avto.net${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+function scrapeActiveAdsPage(): AdsPageResult {
+  const rows = Array.from(document.querySelectorAll('.GO-Results-Row'));
+
+  const ads: AdItem[] = rows
+    .map((row) => {
+      const photoEl = row.querySelector('.GO-Results-Photo');
+      if (!photoEl) {
+        return null;
+      }
+
+      const name = row.querySelector('.GO-Results-Naziv')?.textContent?.trim() ?? '';
+      const photoUrl = photoEl.querySelector('img')?.getAttribute('src') ?? '';
+      const adUrlRaw = photoEl.querySelector('a')?.getAttribute('href') ?? '';
+      const adUrl = normalizeUrl(adUrlRaw);
+
+      if (!adUrl) {
+        return null;
+      }
+
+      let price = '';
+      for (const selector of PRICE_SELECTORS) {
+        const value = row.querySelector(selector)?.textContent?.trim();
+        if (value) {
+          price = value;
+          break;
+        }
+      }
+
+      if (!price || price === 'PRODANO') {
+        return null;
+      }
+
+      const adId = adUrl.split('ID=')[1]?.split('&')[0] ?? '';
+
+      return {
+        name,
+        price,
+        photoUrl: normalizeUrl(photoUrl) ?? photoUrl,
+        adUrl,
+        adId,
+      };
+    })
+    .filter((item): item is AdItem => Boolean(item));
+
+  const nextPageLink = document
+    .querySelector('.GO-Rounded-R a')
+    ?.getAttribute('href');
+
+  return {
+    ads,
+    nextPageUrl: normalizeUrl(nextPageLink),
+  };
 }
 
 async function ensureLoggedIn(email: string, password: string): Promise<void> {
@@ -110,6 +197,11 @@ async function renewCurrentAd(payload: RenewPayload): Promise<{ ok: boolean }> {
 }
 
 chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
+  if (message.type === 'scrape-active-ads-page') {
+    sendResponse(scrapeActiveAdsPage());
+    return false;
+  }
+
   if (message.type !== 'renew-current-ad') {
     return false;
   }
