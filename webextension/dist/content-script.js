@@ -1,3 +1,4 @@
+"use strict";
 const PRICE_SELECTORS = [
     '.GO-Results-Price-Mid',
     '.GO-Results-Price-Mid-Akcija',
@@ -150,4 +151,3 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
     return true;
 });
-export {};

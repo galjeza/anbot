@@ -1,5 +1,3 @@
-export {};
-
 interface RenewPayload {
   email: string;
   password: string;

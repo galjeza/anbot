@@ -1,5 +1,3 @@
-export {};
-
 type LogLevel = 'info' | 'warn' | 'error';
 
 type AdType = 'car' | 'dostavna' | 'platisca';

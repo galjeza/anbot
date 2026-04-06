@@ -1,5 +1,3 @@
-export {};
-
 type MessagePayload = Record<string, unknown>;
 
 type DebugLogEntry = {
