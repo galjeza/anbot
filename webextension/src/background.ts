@@ -175,7 +175,7 @@ async function fetchActiveAds(adType: AdType, brokerId: string): Promise<AdItem[
       await appendDebugLog('info', 'Scraping ads page in content script', { url });
 
       await waitForTabComplete(tab.id);
-      const pageResult = (await chrome.tabs.sendMessage(tab.id, {
+      const pageResult = (await sendMessageWithContentScriptRetry(tab.id, {
         type: 'scrape-active-ads-page',
       })) as AdsPageResult | undefined;
 
@@ -197,6 +197,44 @@ async function fetchActiveAds(adType: AdType, brokerId: string): Promise<AdItem[
     return collected;
   } finally {
     await chrome.tabs.remove(tab.id);
+  }
+}
+
+async function sendMessageWithContentScriptRetry(
+  tabId: number,
+  message: { type: string },
+): Promise<unknown> {
+  try {
+    return await chrome.tabs.sendMessage(tabId, message);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const needsInjection = errorMessage.includes('Receiving end does not exist');
+
+    if (!needsInjection) {
+      throw error;
+    }
+
+    await appendDebugLog('warn', 'Content script receiver missing, trying manual injection', {
+      tabId,
+      messageType: message.type,
+    });
+
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['dist/content-script.js'],
+      });
+    } catch (injectError) {
+      const tabInfo = await chrome.tabs.get(tabId);
+      throw new Error(
+        `Ne morem vstaviti content script v zavihek (${tabInfo.url ?? 'unknown URL'}): ${
+          injectError instanceof Error ? injectError.message : String(injectError)
+        }`,
+      );
+    }
+
+    await sleep(300);
+    return chrome.tabs.sendMessage(tabId, message);
   }
 }
 
