@@ -149,6 +149,18 @@ async function loadDebugLog() {
     state.debugLog = await callBackground('get-debug-log');
     renderDebugLog();
 }
+async function loadCachedAdsForCurrentType() {
+    const adType = els.adType.value;
+    const cached = await callBackground('get-cached-ads', {
+        adType,
+    });
+    state.ads = cached.ads ?? [];
+    state.selectedAds = new Set(state.ads.map((ad) => ad.adId));
+    renderAds();
+    if (cached.fetchedAt) {
+        els.statusText.textContent = `Prikazani shranjeni oglasi (${new Date(cached.fetchedAt).toLocaleTimeString('sl-SI')})`;
+    }
+}
 async function init() {
     setError('');
     await loadUserData();
@@ -164,7 +176,7 @@ async function init() {
     }
     const renewalState = await callBackground('get-renewal-state');
     renderRenewalState(renewalState);
-    renderAds();
+    await loadCachedAdsForCurrentType();
     await loadDebugLog();
 }
 els.configForm.addEventListener('submit', async (event) => {
@@ -207,6 +219,15 @@ els.loadAds.addEventListener('click', async () => {
     catch (error) {
         setError(`Nalagam oglase ni uspelo: ${formatError(error)}`);
         els.statusText.textContent = 'Napaka pri nalaganju oglasov.';
+    }
+});
+els.adType.addEventListener('change', async () => {
+    setError('');
+    try {
+        await loadCachedAdsForCurrentType();
+    }
+    catch (error) {
+        setError(`Branje shranjenih oglasov ni uspelo: ${formatError(error)}`);
     }
 });
 els.startRenewal.addEventListener('click', async () => {

@@ -44,6 +44,14 @@ interface DebugLogEntry {
   context: unknown;
 }
 
+type CachedAdsByType = Record<
+  AdType,
+  {
+    fetchedAt: string;
+    ads: AdItem[];
+  }
+>;
+
 const AVTONET_URLS: Record<AdType, string> = {
   car: 'https://www.avto.net/Ads/results.asp?znamka=&model=&modelID=&tip=&znamka2=&model2=&tip2=&znamka3=&model3=&tip3=&cenaMin=0&cenaMax=999999&letnikMin=0&letnikMax=2090&bencin=0&starost2=999&oblika=0&ccmMin=0&ccmMax=99999&mocMin=0&mocMax=999999&kmMin=0&kmMax=9999999&kwMin=0&kwMax=999999&motortakt=0&motorvalji=0&lokacija=0&sirina=0&dolzina=&dolzinaMIN=0&dolzinaMAX=100&nosilnostMIN=0&nosilnostMAX=999999&lezisc=&presek=0&premer=0&col=0&vijakov=0&EToznaka=0&vozilo=&airbag=&barva=&barvaint=&EQ1=1000000000&EQ2=1000000000&EQ3=1000000000&EQ4=100000000&EQ5=1000000000&EQ6=1000001000&EQ7=1110100120&EQ8=101000000&EQ9=1000000000&KAT=1010000000&PIA=&PIAzero=&PIAOut=&PSLO=&akcija=0&paketgarancije=&prikazkategorije=0&kategorija=0&ONLvid=0&ONLnak=0&zaloga=10&arhiv=0&presort=3&tipsort=DESC&stran=1&subSORT=3&subTIPSORT=ASC&broker=',
   dostavna:
@@ -78,6 +86,11 @@ const DEFAULT_RENEWAL_STATE: RenewalState = {
 };
 
 const MAX_DEBUG_LOG_ITEMS = 500;
+const EMPTY_AD_CACHE: CachedAdsByType = {
+  car: { fetchedAt: '', ads: [] },
+  dostavna: { fetchedAt: '', ads: [] },
+  platisca: { fetchedAt: '', ads: [] },
+};
 
 function makeLogEntry(
   level: LogLevel,
@@ -194,6 +207,12 @@ async function fetchActiveAds(adType: AdType, brokerId: string): Promise<AdItem[
     await appendDebugLog('info', 'fetchActiveAds completed', {
       total: collected.length,
     });
+    const cache = await getStorageValue<CachedAdsByType>('cachedAdsByType', EMPTY_AD_CACHE);
+    cache[adType] = {
+      fetchedAt: new Date().toISOString(),
+      ads: collected,
+    };
+    await setStorageValue('cachedAdsByType', cache);
     return collected;
   } finally {
     await chrome.tabs.remove(tab.id);
@@ -395,6 +414,13 @@ async function startRenewal(
     message: 'Obnavljanje zaključeno.',
   });
 
+  const cache = await getStorageValue<CachedAdsByType>('cachedAdsByType', EMPTY_AD_CACHE);
+  cache[adType] = {
+    fetchedAt: '',
+    ads: [],
+  };
+  await setStorageValue('cachedAdsByType', cache);
+
   await appendDebugLog('info', 'startRenewal finished', { total: ads.length });
 }
 
@@ -439,6 +465,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
   await setStorageValue('renewalState', DEFAULT_RENEWAL_STATE);
   await setStorageValue<DebugLogEntry[]>('debugLog', []);
+  await setStorageValue('cachedAdsByType', EMPTY_AD_CACHE);
 });
 
 chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
@@ -472,6 +499,13 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
       const adType = (message.payload?.adType ?? 'car') as AdType;
       const ads = await fetchActiveAds(adType, userData.brokerId);
       sendResponse({ ok: true, data: ads });
+      return;
+    }
+
+    if (message.type === 'get-cached-ads') {
+      const adType = (message.payload?.adType ?? 'car') as AdType;
+      const cache = await getStorageValue<CachedAdsByType>('cachedAdsByType', EMPTY_AD_CACHE);
+      sendResponse({ ok: true, data: cache[adType] ?? { fetchedAt: '', ads: [] } });
       return;
     }
 

@@ -26,6 +26,11 @@ const DEFAULT_RENEWAL_STATE = {
     errors: [],
 };
 const MAX_DEBUG_LOG_ITEMS = 500;
+const EMPTY_AD_CACHE = {
+    car: { fetchedAt: '', ads: [] },
+    dostavna: { fetchedAt: '', ads: [] },
+    platisca: { fetchedAt: '', ads: [] },
+};
 function makeLogEntry(level, message, context = null) {
     return {
         ts: new Date().toISOString(),
@@ -115,6 +120,12 @@ async function fetchActiveAds(adType, brokerId) {
         await appendDebugLog('info', 'fetchActiveAds completed', {
             total: collected.length,
         });
+        const cache = await getStorageValue('cachedAdsByType', EMPTY_AD_CACHE);
+        cache[adType] = {
+            fetchedAt: new Date().toISOString(),
+            ads: collected,
+        };
+        await setStorageValue('cachedAdsByType', cache);
         return collected;
     }
     finally {
@@ -271,6 +282,12 @@ async function startRenewal(ads, pauseMinutes, adType) {
         currentAdId: null,
         message: 'Obnavljanje zaključeno.',
     });
+    const cache = await getStorageValue('cachedAdsByType', EMPTY_AD_CACHE);
+    cache[adType] = {
+        fetchedAt: '',
+        ads: [],
+    };
+    await setStorageValue('cachedAdsByType', cache);
     await appendDebugLog('info', 'startRenewal finished', { total: ads.length });
 }
 async function refreshSubscription() {
@@ -304,6 +321,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     }
     await setStorageValue('renewalState', DEFAULT_RENEWAL_STATE);
     await setStorageValue('debugLog', []);
+    await setStorageValue('cachedAdsByType', EMPTY_AD_CACHE);
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     (async () => {
@@ -333,6 +351,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             const adType = (message.payload?.adType ?? 'car');
             const ads = await fetchActiveAds(adType, userData.brokerId);
             sendResponse({ ok: true, data: ads });
+            return;
+        }
+        if (message.type === 'get-cached-ads') {
+            const adType = (message.payload?.adType ?? 'car');
+            const cache = await getStorageValue('cachedAdsByType', EMPTY_AD_CACHE);
+            sendResponse({ ok: true, data: cache[adType] ?? { fetchedAt: '', ads: [] } });
             return;
         }
         if (message.type === 'start-renewal') {
