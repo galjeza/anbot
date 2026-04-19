@@ -126,6 +126,16 @@ export const createNewAd = async (browser, carData, adType) => {
   await solveCaptcha(page);
   console.log('Captcha solved');
 
-  await page.click('button[name="EDITAD"]');
+  await Promise.all([
+    page.waitForNavigation({ timeout: SLOW_TIMEOUT_MS }).catch(() => {}),
+    page.click('button[name="EDITAD"]'),
+  ]);
+
+  await page
+    .waitForSelector('.mojtrg, .ButtonAddPhoto, input[type=file]', {
+      timeout: 30 * 1000,
+    })
+    .catch(() => {});
+
   console.log('[createNewAd] Submitted new ad');
 };

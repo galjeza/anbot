@@ -9,12 +9,12 @@ const STEEL_API_KEY =
 const STEEL_SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 const DEFAULT_PUPPETEER_TIMEOUT_MS = 60 * 1000;
 
-const client = new Steel({
+export const steelClient = new Steel({
   steelAPIKey: STEEL_API_KEY,
 });
 
 export async function setupBrowser() {
-  const session = await client.sessions.create({
+  const session = await steelClient.sessions.create({
     useProxy: true,
     solveCaptcha: true,
     timeout: STEEL_SESSION_TIMEOUT_MS,
@@ -29,6 +29,7 @@ export async function setupBrowser() {
     const browser = await puppeteer.connect({
       // Correct URL format per Steel docs
       browserWSEndpoint: `wss://connect.steel.dev?apiKey=${STEEL_API_KEY}&sessionId=${session.id}`,
+      protocolTimeout: STEEL_SESSION_TIMEOUT_MS,
     });
 
     const applyPageTimeouts = (page) => {
@@ -54,13 +55,13 @@ export async function setupBrowser() {
         await browser.disconnect();
       } catch {}
       try {
-        await client.sessions.release(session.id);
+        await steelClient.sessions.release(session.id);
       } catch {}
     };
 
-    return { browser, release };
+    return { browser, release, sessionId: session.id };
   } catch (error) {
-    await client.sessions.release(session.id).catch(() => {});
+    await steelClient.sessions.release(session.id).catch(() => {});
     throw error;
   }
 }

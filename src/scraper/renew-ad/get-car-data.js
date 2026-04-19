@@ -14,7 +14,6 @@ export const getCarData = async (
   adId,
   hdImages,
   adType = 'car',
-  isTestMode = false,
 ) => {
   const userDataPath = app.getPath('userData');
   const [page] = await browser.pages();
@@ -25,7 +24,6 @@ export const getCarData = async (
     adId,
     adType,
     hdImages,
-    isTestMode,
     editUrl,
   });
   await page.goto(editUrl, { timeout: 0 });
@@ -134,20 +132,16 @@ export const getCarData = async (
   const priceField = inputs.find((input) => input.name === 'cena');
   const letoRegField = carData.find((data) => data.name === 'letoReg');
 
-  if (!isTestMode && priceField) {
+  if (priceField) {
     const originalPrice = parseInt(priceField.value) || 1000;
     const newPrice = Math.max(100, originalPrice + randomPriceOffset());
     console.log('[getCarData] Adjusting price', { originalPrice, newPrice });
     await page.click('input[name="cena"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="cena"]', newPrice.toString());
-  } else if (isTestMode && priceField) {
-    console.log('[Test Mode] Skipping price update', {
-      currentPrice: priceField.value,
-    });
   }
 
-  if (!isTestMode && letoRegField) {
+  if (letoRegField) {
     const newYear = randomRegistrationYear();
     console.log('[getCarData] Adjusting registration year', {
       originalYear: letoRegField.value,
@@ -156,21 +150,13 @@ export const getCarData = async (
     await page.click('input[name="letoReg"]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
     await page.type('input[name="letoReg"]', newYear);
-  } else if (isTestMode && letoRegField) {
-    console.log('[Test Mode] Skipping registration year update', {
-      currentYear: letoRegField.value,
-    });
   }
 
-  if (isTestMode) {
-    console.log('[Test Mode] Skipping edit submit on old ad');
-  } else {
-    console.log('[getCarData] Submitting edit form');
-    await wait(3);
-    await solveCaptcha(page);
-    await page.click('button[name=ADVIEW]');
-    await wait(3);
-  }
+  console.log('[getCarData] Submitting edit form');
+  await wait(3);
+  await solveCaptcha(page);
+  await page.click('button[name=ADVIEW]');
+  await wait(3);
   // -------------------------------------------------------------------------
 
   console.log('[getCarData] Navigating to images page');

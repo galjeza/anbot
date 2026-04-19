@@ -2,28 +2,77 @@ import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
 
+import { steelClient } from '../utils/browser-utils.js';
 import { getAdImagesDirectory, wait, randomWait } from '../utils/utils.js';
 
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
-export const uploadImages = async (browser, carData, adType = 'car') => {
+export const uploadImages = async (
+  browser,
+  carData,
+  adType = 'car',
+  sessionId,
+) => {
   const userDataPath = app.getPath('userData');
   const maxRetries = 3;
   let retryCount = 0;
+  const uploadedFilesByLocalPath = new Map();
+
+  if (!sessionId) {
+    throw new Error('Steel session ID is required for image uploads');
+  }
+
+  const resolveUploadPage = async () => {
+    const pages = await browser.pages();
+    if (pages.length === 0) {
+      throw new Error('No browser pages available for image upload');
+    }
+
+    const avtoNetPages = pages.filter((page) => {
+      try {
+        const pageUrl = page.url();
+        return pageUrl.includes('avto.net') && pageUrl !== 'about:blank';
+      } catch {
+        return false;
+      }
+    });
+
+    return avtoNetPages[0] || pages[0];
+  };
+
+  const getFileInput = async (page) => {
+    for (let inputAttempt = 1; inputAttempt <= 5; inputAttempt += 1) {
+      const fileInput = await page.$('input[type=file]');
+      if (fileInput) {
+        return fileInput;
+      }
+
+      const addPhotoButton = await page.$('.ButtonAddPhoto');
+      if (addPhotoButton) {
+        console.log('[uploadImages] Opening upload input', { inputAttempt });
+        await addPhotoButton.click().catch(() => {});
+      }
+
+      await wait(2);
+    }
+
+    return null;
+  };
+
   console.log('[uploadImages] Start', { adType, maxRetries });
 
   while (retryCount < maxRetries) {
     try {
       console.log('[uploadImages] Attempt', { attempt: retryCount + 1 });
-      let imagesUploadPage = await browser
-        .pages()
-        .then((pages) => pages[pages.length - 1]);
+      const imagesUploadPage = await resolveUploadPage();
 
       imagesUploadPage.setDefaultTimeout(SLOW_TIMEOUT_MS);
       imagesUploadPage.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
 
       await imagesUploadPage
-        .waitForNavigation({ timeout: SLOW_TIMEOUT_MS })
+        .waitForSelector('.mojtrg, .ButtonAddPhoto, input[type=file]', {
+          timeout: SLOW_TIMEOUT_MS,
+        })
         .catch(() => {});
 
       // Check if we're on the correct page by looking for multiple possible selectors
@@ -76,20 +125,11 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
 
       for (const imageFile of imageFiles) {
         await wait(3);
-        imagesUploadPage = await browser
-          .pages()
-          .then((pages) => pages[pages.length - 1]);
+        if (imagesUploadPage.isClosed()) {
+          throw new Error('Image upload page was closed');
+        }
 
-        imagesUploadPage.setDefaultTimeout(SLOW_TIMEOUT_MS);
-        imagesUploadPage.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
-
-        // Wait for file input with increased timeout
-        await imagesUploadPage.waitForSelector('input[type=file]', {
-          timeout: SLOW_TIMEOUT_MS,
-          visible: true,
-        });
-
-        const fileInput = await imagesUploadPage.$('input[type=file]');
+        const fileInput = await getFileInput(imagesUploadPage);
         if (!fileInput) {
           throw new Error('File input not found');
         }
@@ -101,8 +141,35 @@ export const uploadImages = async (browser, carData, adType = 'car') => {
           continue;
         }
 
-        console.log('[uploadImages] Uploading file', { imageFile });
-        await fileInput.uploadFile(imagePath);
+        let sessionImagePath = uploadedFilesByLocalPath.get(imagePath);
+        if (!sessionImagePath) {
+          const uploadedSessionFile = await steelClient.sessions.files.upload(
+            sessionId,
+            {
+              file: fs.createReadStream(imagePath),
+            },
+          );
+
+          if (!uploadedSessionFile?.path) {
+            throw new Error(
+              `Failed to upload image to Steel session: ${imageFile}`,
+            );
+          }
+
+          sessionImagePath = uploadedSessionFile.path;
+          uploadedFilesByLocalPath.set(imagePath, sessionImagePath);
+
+          console.log('[uploadImages] Uploaded file to Steel session', {
+            imageFile,
+            sessionImagePath,
+          });
+        }
+
+        console.log('[uploadImages] Uploading file', {
+          imageFile,
+          sessionImagePath,
+        });
+        await fileInput.uploadFile(sessionImagePath);
         await wait(2);
 
         const addPhotoButtons = await imagesUploadPage.$$('.ButtonAddPhoto');

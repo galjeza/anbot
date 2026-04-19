@@ -5,7 +5,6 @@ import { deleteOldAd } from './renew-ad/delete-old-ad.js';
 import { createNewAd } from './renew-ad/create-new-ad.js';
 import { uploadImages } from './renew-ad/upload-images.js';
 
-const IS_TEST_MODE = true;
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const renewAd = async (adId, email, password, hdImages, adType) => {
@@ -13,9 +12,8 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
     adId,
     adType,
     hdImages,
-    isTestMode: IS_TEST_MODE,
   });
-  const { browser, release } = await setupBrowser();
+  const { browser, release, sessionId } = await setupBrowser();
   let page;
   try {
     [page] = await browser.pages();
@@ -29,18 +27,13 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
       adId,
       hdImages,
       adType,
-      IS_TEST_MODE,
     );
     console.log('* Fetched car data successfully');
-    if (IS_TEST_MODE) {
-      console.log('[Test Mode] Skipping delete of old ad');
-    } else {
-      await deleteOldAd(browser, adId);
-      console.log('* Deleted old ad successfully');
-    }
+    await deleteOldAd(browser, adId);
+    console.log('* Deleted old ad successfully');
     await createNewAd(browser, carData, adType);
     console.log('* Created new ad successfully');
-    await uploadImages(browser, carData, adType);
+    await uploadImages(browser, carData, adType, sessionId);
     console.log('* Uploaded images successfully');
     console.log('[RenewAd] Done', { adId });
   } finally {
