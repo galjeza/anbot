@@ -7,11 +7,19 @@ import { uploadImages } from './renew-ad/upload-images.js';
 
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
-export const renewAd = async (adId, email, password, hdImages, adType) => {
+export const renewAd = async (
+  adId,
+  email,
+  password,
+  hdImages,
+  adType,
+  testMode = false,
+) => {
   console.log('[RenewAd] Start', {
     adId,
     adType,
     hdImages,
+    testMode,
   });
   const { browser, release, sessionId } = await setupBrowser();
   let page;
@@ -27,10 +35,15 @@ export const renewAd = async (adId, email, password, hdImages, adType) => {
       adId,
       hdImages,
       adType,
+      testMode,
     );
     console.log('* Fetched car data successfully');
-    await deleteOldAd(browser, adId);
-    console.log('* Deleted old ad successfully');
+    if (testMode) {
+      console.log('* Test mode: skipping deleteOldAd');
+    } else {
+      await deleteOldAd(browser, adId);
+      console.log('* Deleted old ad successfully');
+    }
     await createNewAd(browser, carData, adType);
     console.log('* Created new ad successfully');
     await uploadImages(browser, carData, adType, sessionId);

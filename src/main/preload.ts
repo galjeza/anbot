@@ -27,8 +27,8 @@ const electronHandler = {
       return ipcRenderer.invoke('get-ads', adType);
     },
 
-    renewAds(ads: string, pause: number, adType: any) {
-      return ipcRenderer.invoke('renew-ads', ads, pause, adType);
+    renewAds(ads: string, pause: number, adType: any, testMode: boolean = false) {
+      return ipcRenderer.invoke('renew-ads', ads, pause, adType, testMode);
     },
 
     checkUpdateStatus() {

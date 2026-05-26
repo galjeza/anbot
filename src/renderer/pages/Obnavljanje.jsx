@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const Obnavljanje = () => {
   const location = useLocation();
-  const { selected, pause, type } = location.state || { selected: [] };
+  const { selected, pause, type, testMode } = location.state || { selected: [] };
   const navigate = useNavigate();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [error, setError] = useState(null);
@@ -21,7 +21,7 @@ const Obnavljanje = () => {
       if (selected.length > 0) {
         setIsProcessing(true);
         try {
-          await window.electron.ipcRenderer.renewAds(selected, pause, type);
+          await window.electron.ipcRenderer.renewAds(selected, pause, type, !!testMode);
           navigate('/');
         } catch (err) {
           setError(err.message || 'An error occurred during ad renewal');
@@ -65,6 +65,7 @@ const Obnavljanje = () => {
       <div className="w-full max-w-md p-4 bg-gray-800 shadow-md rounded-lg">
         <h2 className="text-lg font-semibold text-center mb-4 text-white">
           {isProcessing ? 'Obnavljam oglase' : 'Pripravljam obnavljanje'}
+          {testMode ? ' (Testni način)' : ''}
         </h2>
         {selected.length > 0 ? (
           <>

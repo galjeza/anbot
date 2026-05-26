@@ -9,6 +9,7 @@ const AdList = () => {
   const [selectedAds, setSelectedAds] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [pause, setPause] = useState(60);
+  const [testMode, setTestMode] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -52,7 +53,7 @@ const AdList = () => {
 
   const handleSubmit = () => {
     const selected = ads.filter((ad) => selectedAds.has(ad.adId));
-    navigate('/obnavljanje', { state: { selected, pause, type } });
+    navigate('/obnavljanje', { state: { selected, pause, type, testMode } });
   };
 
   if (loading) {
@@ -110,6 +111,15 @@ const AdList = () => {
             onChange={() => setSelectAll(!selectAll)}
           />
           <span className="ml-2 text-sm">Izberi vse</span>
+        </label>
+        <label className="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-gray-800 border-2 checked:bg-blue-500 checked:border-transparent"
+            checked={testMode}
+            onChange={() => setTestMode(!testMode)}
+          />
+          <span className="ml-2 text-sm">Testni način (ne izbriši starega oglasa)</span>
         </label>
       </div>
       <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
