@@ -73,12 +73,21 @@ export const getCarData = async (
   }
 
   const selects = await page.$$eval('select', (selects) =>
-    selects.map((select) => ({
-      name: select.name,
-      value: select.value,
-    })),
+    selects.map((select) => {
+      const opt = select.options[select.selectedIndex];
+      return {
+        name: select.name,
+        value: select.value,
+        selectedText: opt ? opt.textContent.trim() : null,
+      };
+    }),
   );
   console.log('[getCarData] Selects scraped', { count: selects.length });
+
+  const gorivoSelect = selects.find((s) => s.name === 'gorivo');
+  if (gorivoSelect) {
+    console.log('[getCarData] gorivo select', gorivoSelect);
+  }
 
   const inputs = await page.$$eval('input', (inputs) =>
     inputs.map((input) => ({
@@ -105,6 +114,10 @@ export const getCarData = async (
     'snippet:',
     htmlOpis ? htmlOpis.slice(0, 120) : '',
   );
+
+  if (gorivoSelect && gorivoSelect.selectedText) {
+    selects.push({ name: 'gorivoText', value: gorivoSelect.selectedText });
+  }
 
   const carData = [
     ...textAreas,
