@@ -123,10 +123,27 @@ export const uploadImages = async (
         count: imageFiles.length,
       });
 
-      for (const imageFile of imageFiles) {
+      if (imageFiles.length === 0) {
+        throw new Error(
+          `[uploadImages] No image files in ${adImagesDirectory} — refusing to publish a no-photo ad`,
+        );
+      }
+
+      for (const [imgIdx, imageFile] of imageFiles.entries()) {
         await wait(3);
         if (imagesUploadPage.isClosed()) {
           throw new Error('Image upload page was closed');
+        }
+
+        try {
+          console.log('[uploadImages] Iteration start', {
+            imgIdx,
+            imageFile,
+            url: imagesUploadPage.url(),
+            closed: imagesUploadPage.isClosed(),
+          });
+        } catch (e) {
+          console.log('[uploadImages] Iteration start state read failed', e && e.message);
         }
 
         const fileInput = await getFileInput(imagesUploadPage);
@@ -170,13 +187,62 @@ export const uploadImages = async (
           sessionImagePath,
         });
         await fileInput.uploadFile(sessionImagePath);
-        await wait(2);
+        await wait(4);
+
+        // Dump info about every .ButtonAddPhoto so we can see if the click target drifts.
+        const buttonDetails = await imagesUploadPage
+          .evaluate(() => {
+            const btns = Array.from(document.querySelectorAll('.ButtonAddPhoto'));
+            return btns.map((el) => ({
+              tag: el.tagName,
+              type: el.type || null,
+              name: el.name || null,
+              className: el.className,
+              text: (el.textContent || '').trim().slice(0, 80),
+              hidden: el.offsetParent === null,
+              outer: el.outerHTML.slice(0, 200),
+            }));
+          })
+          .catch((e) => ({ error: e && e.message }));
+        console.log('[uploadImages] ButtonAddPhoto candidates', {
+          imgIdx,
+          buttons: buttonDetails,
+        });
+
+        // Count existing thumbnails / file rows so we can see if the page actually
+        // accepted the upload before we click again.
+        const thumbCount = await imagesUploadPage
+          .evaluate(() => ({
+            images: document.querySelectorAll('img').length,
+            fileInputs: document.querySelectorAll('input[type=file]').length,
+            url: location.href,
+          }))
+          .catch((e) => ({ error: e && e.message }));
+        console.log('[uploadImages] Page state after upload', { imgIdx, thumbCount });
 
         const addPhotoButtons = await imagesUploadPage.$$('.ButtonAddPhoto');
         if (addPhotoButtons.length > 0) {
-          console.log('[uploadImages] Clicking add photo button');
-          await addPhotoButtons[0].click().catch(() => {});
+          console.log('[uploadImages] Clicking add photo button', {
+            imgIdx,
+            buttonIndex: 0,
+            total: addPhotoButtons.length,
+          });
+          await addPhotoButtons[0].click().catch((e) => {
+            console.log('[uploadImages] Click error', { error: e && e.message });
+          });
           await wait(4);
+
+          try {
+            console.log('[uploadImages] Post-click state', {
+              imgIdx,
+              url: imagesUploadPage.url(),
+              closed: imagesUploadPage.isClosed(),
+            });
+          } catch (e) {
+            console.log('[uploadImages] Post-click state read failed', e && e.message);
+          }
+        } else {
+          console.log('[uploadImages] No ButtonAddPhoto found after upload', { imgIdx });
         }
       }
 

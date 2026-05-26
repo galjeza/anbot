@@ -179,10 +179,42 @@ export const getCarData = async (
   // -------------------------------------------------------------------------
 
   console.log('[getCarData] Navigating to images page');
-  await page.goto(`${AVTONET_IMAGES_PREFIX}${adId}`, { timeout: 0 });
-  const images = await page.$$eval('img', (imgs) => imgs.map((img) => img.src));
-  let adImages = images.filter((img) => img.includes('images.avto.net'));
-  console.log('[getCarData] Found image URLs', { count: adImages.length });
+  const imagesPageUrl = `${AVTONET_IMAGES_PREFIX}${adId}`;
+  await page.goto(imagesPageUrl, { timeout: 0 });
+  await wait(3);
+
+  const allImgSrcs = await page.$$eval('img', (imgs) =>
+    imgs.map((img) => img.src),
+  );
+  let adImages = allImgSrcs.filter((img) => img.includes('images.avto.net'));
+  console.log('[getCarData] Found image URLs', {
+    totalImgs: allImgSrcs.length,
+    matchedAvtoNet: adImages.length,
+    landedAt: page.url(),
+  });
+
+  if (adImages.length === 0) {
+    // Dump page diagnostics so we can see what's actually on the images page
+    // when scraping returns nothing.
+    const diag = await page.evaluate(() => ({
+      title: document.title,
+      bodyTextSnippet: (document.body && document.body.innerText
+        ? document.body.innerText
+        : ''
+      ).slice(0, 400),
+      allImgs: Array.from(document.querySelectorAll('img'))
+        .slice(0, 30)
+        .map((i) => i.src),
+    }));
+    console.log('[getCarData] Images-page diagnostics (no matches)', {
+      requestedUrl: imagesPageUrl,
+      ...diag,
+    });
+    throw new Error(
+      `[getCarData] No images found on images page for ad ${adId} — aborting before destructive steps`,
+    );
+  }
+
   adImages = adImages.map((img) => img.replace('_160', ''));
   console.log('- Found images: ', adImages);
   if (hdImages) {
