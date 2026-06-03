@@ -2,6 +2,7 @@ import { wait } from '../utils/utils.js';
 
 export const loginToAvtonet = async (browser, email, password) => {
   const DEFAULT_TIMEOUT_MS = 60 * 1000;
+  const TYPE_DELAY_MS = 50;
   const [page] = await browser.pages();
   const COOKIE_ACCEPT_SELECTOR = '#CybotCookiebotDialogBodyLevelButtonAccept';
   const LOGIN_URL = 'https://www.avto.net/_2016mojavtonet/';
@@ -28,16 +29,18 @@ export const loginToAvtonet = async (browser, email, password) => {
     await page.waitForSelector('input[name=enaslov]', {
       timeout: 0,
     });
+    console.log('[Login] Login fields visible, waiting before typing');
+    await wait(5);
     console.log(
       `[Login] Logging in with email: ${email} and password ${password}`,
     );
     console.log('[Login] Typing credentials');
     await page.click('input[name=enaslov]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
-    await page.type('input[name=enaslov]', email);
+    await page.type('input[name=enaslov]', email, { delay: TYPE_DELAY_MS });
     await page.click('input[name=geslo]', { clickCount: 3 });
     await page.keyboard.press('Backspace');
-    await page.type('input[name=geslo]', password);
+    await page.type('input[name=geslo]', password, { delay: TYPE_DELAY_MS });
     console.log('[Login] Accepting checkboxes');
     await page.$$eval('input[type=checkbox]', (checks) =>
       checks.forEach((check) => check.click()),
