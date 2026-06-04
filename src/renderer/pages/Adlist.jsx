@@ -22,7 +22,7 @@ const AdList = () => {
       setError(null);
       try {
         const fetchedAds = await window.electron.ipcRenderer.getAds(type);
-        setAds(fetchedAds || []); // Reverse the array after fetching
+        setAds((fetchedAds || []).slice().reverse());
       } catch (error) {
         setError(error.message || 'An error occurred while fetching ads');
       } finally {
