@@ -115,51 +115,48 @@ const ensureAvtoTab = async (preferWindowId) => {
   return tab;
 };
 
-// Wait until the tab finishes navigating (status === 'complete') AND the
-// content script answers a ping. Re-injecting the content script if Chrome
-// somehow misses it is rare in practice — the manifest does the injection.
-const waitForTabReady = async (tabId, timeoutMs = 120_000) => {
-  const start = Date.now();
-
-  // Phase 1 — wait for status complete.
-  await new Promise((resolve, reject) => {
-    const listener = (updatedTabId, info) => {
-      if (updatedTabId !== tabId) return;
-      if (info.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-
-    // Tab might already be complete.
-    chrome.tabs.get(tabId).then((tab) => {
-      if (tab.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    }).catch(reject);
-
-    setTimeout(() => {
-      chrome.tabs.onUpdated.removeListener(listener);
-      reject(new Error('waitForTabReady: timeout waiting for tab complete'));
-    }, timeoutMs);
-  });
-
-  // Phase 2 — ping the content script until it responds.
-  const deadline = start + timeoutMs;
+// Wait until the content script in the tab answers a ping (i.e. the DOM is
+// interactive). avto.net pages keep loading trackers/ads forever, so we don't
+// gate on `status === 'complete'` — each scraper waits for the specific
+// elements it needs via waitForSelector.
+//
+// Pass `expectUrl` when we navigated to a known URL — we require the ping to
+// come from that URL prefix. Pass `previousUrl` when we triggered a form
+// submit / reload and don't know the destination — we require the ping to
+// come from any URL OTHER than the previous one. Without either, we accept
+// any ping, which can race with navigation teardown (the old page may pong
+// briefly before being killed).
+const waitForTabReady = async (
+  tabId,
+  { expectUrl, previousUrl, timeoutMs = 60_000 } = {},
+) => {
+  const deadline = Date.now() + timeoutMs;
+  // Small initial delay so an in-flight navigation has a chance to start
+  // tearing down the old document before we ping.
+  await sleep(300);
+  const expectPrefix = expectUrl ? expectUrl.split(/[?#]/)[0] : null;
   let lastErr;
   while (Date.now() < deadline) {
     try {
-      await sendToTab(tabId, 'ping');
-      return;
+      const pong = await sendToTab(tabId, 'ping');
+      if (expectPrefix) {
+        if (pong?.url && pong.url.startsWith(expectPrefix)) return pong;
+        lastErr = new Error(
+          `URL ${pong?.url} does not match expected ${expectUrl}`,
+        );
+      } else if (previousUrl) {
+        if (pong?.url && pong.url !== previousUrl) return pong;
+        lastErr = new Error(`URL still at previous ${previousUrl}`);
+      } else {
+        return pong;
+      }
     } catch (e) {
       lastErr = e;
-      await sleep(500);
     }
+    await sleep(300);
   }
   throw new Error(
-    `waitForTabReady: content script never responded — ${lastErr?.message}`,
+    `waitForTabReady: ${lastErr?.message || 'no response'}${expectUrl ? ` (expected ${expectUrl})` : ''}${previousUrl ? ` (was ${previousUrl})` : ''}`,
   );
 };
 
@@ -179,9 +176,35 @@ const sendToTab = (tabId, command, payload) =>
     });
   });
 
+// Used when the command we send is expected to trigger navigation. The
+// content script may not get to call sendResponse before the page tears down,
+// which surfaces as "message channel closed". That's expected — the response
+// would just be undefined data anyway. After the call, the caller should
+// waitForTabReady with previousUrl/expectUrl to confirm the navigation
+// actually happened.
+const sendToTabFireAndForget = async (tabId, command, payload) => {
+  try {
+    await sendToTab(tabId, command, payload);
+  } catch (e) {
+    if (
+      /message channel closed|Could not establish connection|Receiving end does not exist/i.test(
+        e.message || '',
+      )
+    ) {
+      return;
+    }
+    throw e;
+  }
+};
+
+const getCurrentTabUrl = async (tabId) => {
+  const tab = await chrome.tabs.get(tabId);
+  return tab.url || '';
+};
+
 const navigateAndWait = async (tabId, url) => {
   await chrome.tabs.update(tabId, { url });
-  await waitForTabReady(tabId);
+  await waitForTabReady(tabId, { expectUrl: url });
 };
 
 // ----------------------------- Fetch active ads ----------------------------
@@ -234,8 +257,9 @@ const renewSingleAd = async (
   if (!testMode) {
     updateJob({ step: 'submit-edit' });
     checkCancelled();
-    await sendToTab(tabId, 'mutateAndSubmitEdit', { carData });
-    await waitForTabReady(tabId);
+    const beforeUrl = await getCurrentTabUrl(tabId);
+    await sendToTabFireAndForget(tabId, 'mutateAndSubmitEdit', { carData });
+    await waitForTabReady(tabId, { previousUrl: beforeUrl });
   }
 
   // Images
@@ -277,27 +301,30 @@ const renewSingleAd = async (
   });
 
   if (!step1Result.skipped) {
-    // potrdi causes navigation
-    await waitForTabReady(tabId);
+    // potrdi caused navigation
+    await waitForTabReady(tabId, { previousUrl: NEW_AD_URL[adType] });
     if (adType === 'car') {
       updateJob({ step: 'click-supurl' });
+      // .supurl is an in-page click (expands a section) — no navigation.
       await sendToTab(tabId, 'clickSupurl');
-      await waitForTabReady(tabId);
     }
   }
 
-  // fillFormAndSubmit reloads the page; after reload, fill again then submit.
+  // Wait for the cena field to appear, then reload the tab (mirroring the
+  // original puppeteer flow that reloaded once to settle state). Doing the
+  // reload from the background gives us a clean navigation boundary.
   updateJob({ step: 'fill-form-first-pass' });
   checkCancelled();
-  await sendToTab(tabId, 'fillFormAndSubmit', { carData, adType }).catch(() => {});
-  // The reload races with the response; wait for it to settle.
+  await sendToTab(tabId, 'waitForCenaInput');
+  await chrome.tabs.reload(tabId);
   await waitForTabReady(tabId);
 
   updateJob({ step: 'fill-form-and-submit' });
   checkCancelled();
-  await sendToTab(tabId, 'fillFormAfterReload', { carData, adType });
+  const beforeFinalSubmit = await getCurrentTabUrl(tabId);
+  await sendToTabFireAndForget(tabId, 'fillFormAfterReload', { carData, adType });
   // EDITAD click navigates to image upload page.
-  await waitForTabReady(tabId);
+  await waitForTabReady(tabId, { previousUrl: beforeFinalSubmit });
 
   // Upload images
   updateJob({ step: 'upload-images' });
@@ -409,6 +436,27 @@ const rpc = {
     );
     if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
     return resp.json();
+  },
+
+  // Image fetch on behalf of the content script. images.avto.net blocks
+  // cross-origin fetches from www.avto.net (CORS), but the service worker
+  // gets host-permission-based bypass. Bytes are returned as base64 because
+  // chrome.runtime.sendMessage uses JSON-only serialization.
+  'fetch-image': async ({ url }) => {
+    const resp = await fetch(url);
+    if (!resp.ok) return { ok: false, status: resp.status };
+    const buf = await resp.arrayBuffer();
+    const mimeType = resp.headers.get('content-type') || 'image/jpeg';
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(
+        null,
+        bytes.subarray(i, i + chunkSize),
+      );
+    }
+    return { ok: true, base64: btoa(binary), mimeType };
   },
 
   'get-ads': async ({ adType, windowId }) => {

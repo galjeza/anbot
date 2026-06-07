@@ -28,7 +28,7 @@
     // Create new ad
     createNewAdStep1: createNewAd.createNewAdStep1,
     clickSupurl: createNewAd.clickSupurl,
-    fillFormAndSubmit: createNewAd.fillFormAndSubmit,
+    waitForCenaInput: createNewAd.waitForCenaInput,
     fillFormAfterReload: createNewAd.fillFormAfterReload,
 
     // Upload images

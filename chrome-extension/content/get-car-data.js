@@ -115,8 +115,11 @@
 
     const submit = document.querySelector('button[name=ADVIEW]');
     if (!submit) throw new Error('Edit form submit button missing');
+    // Return synchronously after the click. Awaiting here would let the
+    // page navigate while we're still inside the handler, which orphans
+    // sendResponse and surfaces as "message channel closed". Background's
+    // waitForTabReady handles the post-navigation wait.
     submit.click();
-    await wait(3);
   };
 
   // Step 3: on the images page, pull the image URLs that point at
@@ -160,21 +163,42 @@
       count: imageUrls.length,
     });
 
+    const fetchViaBackground = (url) =>
+      new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { rpc: 'fetch-image', payload: { url } },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              return reject(new Error(chrome.runtime.lastError.message));
+            }
+            if (!response) return reject(new Error('Empty response'));
+            if (response.error) return reject(new Error(response.error));
+            resolve(response.data);
+          },
+        );
+      });
+
+    const base64ToBlob = (base64, mimeType) => {
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: mimeType });
+    };
+
     let written = 0;
+    const failures = [];
     for (const [index, url] of imageUrls.entries()) {
       try {
-        const resp = await fetch(url, {
-          credentials: 'omit',
-          headers: { 'User-Agent': navigator.userAgent },
-        });
-        if (!resp.ok) {
+        const result = await fetchViaBackground(url);
+        if (!result.ok) {
+          failures.push(`HTTP ${result.status} for ${url}`);
           console.log('[cacheImages] Skipping failed image', {
             url,
-            status: resp.status,
+            status: result.status,
           });
           continue;
         }
-        let blob = await resp.blob();
+        let blob = base64ToBlob(result.base64, result.mimeType);
         if (!hdImages) {
           try {
             blob = await imageProcess.reduceSharpnessDesaturateAndBlurEdges(
@@ -190,12 +214,16 @@
         await imageCache.putImage(cacheKey, index, blob);
         written += 1;
       } catch (e) {
+        failures.push(`${e.message} for ${url}`);
         console.log('[cacheImages] Download error', { url, error: e.message });
       }
     }
 
     if (written === 0) {
-      throw new Error('No images downloaded — aborting');
+      throw new Error(
+        `No images downloaded — aborting. ${imageUrls.length} URLs tried, ` +
+          `${failures.length} failed. First failure: ${failures[0] || 'unknown'}`,
+      );
     }
 
     await imageCache.setManifest(cacheKey, written);

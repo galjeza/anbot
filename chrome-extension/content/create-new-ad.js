@@ -45,8 +45,10 @@
 
     const potrdi = document.querySelector('button[name="potrdi"]');
     if (!potrdi) throw new Error('Potrdi button missing');
+    // Return synchronously after the click. Awaiting here would let the
+    // page navigate while we're still inside the handler, which orphans
+    // sendResponse. Background waits for the new page via waitForTabReady.
     triggerClick(potrdi);
-    await wait(5);
     return { skipped: false };
   };
 
@@ -58,16 +60,14 @@
     console.log('[createNewAd] Clicked supurl');
   };
 
-  // Step 3: page reload to settle state, then fill out every field and
-  // submit. After submit the page navigates to the photo upload page.
-  const fillFormAndSubmit = async ({ carData, adType }) => {
+  // Step 3a: wait for the cena field to be present. The background then
+  // triggers chrome.tabs.reload (to settle state, mirroring the original
+  // puppeteer flow). Done in background so we never have to await past a
+  // navigation in this script (which would orphan sendResponse).
+  const waitForCenaInput = async () => {
     await waitForSelector('input[name="cena"], input[name="cenaEURO"]', {
       timeout: 15 * 60 * 1000,
     });
-    // Original puppeteer flow reloaded once to settle state — mirror that.
-    location.reload();
-    // Reload kills this script, so just exit — the background calls
-    // fillFormAfterReload once the new page is ready.
   };
 
   const fillFormAfterReload = async ({ carData, adType }) => {
@@ -100,7 +100,7 @@
   ns.createNewAd = {
     createNewAdStep1,
     clickSupurl,
-    fillFormAndSubmit,
+    waitForCenaInput,
     fillFormAfterReload,
   };
 })();

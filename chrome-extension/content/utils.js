@@ -8,9 +8,10 @@
     return wait(t);
   };
 
+  // Puppeteer convention: timeout === 0 means "wait forever".
   const waitForSelector = async (selector, { timeout = 60000, root = document } = {}) => {
     const start = Date.now();
-    while (Date.now() - start < timeout) {
+    while (timeout === 0 || Date.now() - start < timeout) {
       const el = root.querySelector(selector);
       if (el) return el;
       await wait(0.1);
@@ -20,7 +21,7 @@
 
   const waitForFunction = async (fn, { timeout = 60000, interval = 0.1 } = {}) => {
     const start = Date.now();
-    while (Date.now() - start < timeout) {
+    while (timeout === 0 || Date.now() - start < timeout) {
       const result = fn();
       if (result) return result;
       await wait(interval);
