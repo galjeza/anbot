@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "Avtonet Bot",
+  "version": "1.0.0",
+  "description": "Obnavljanje oglasov na avto.net.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "Avtonet Bot",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "unlimitedStorage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.avto.net/*",
+    "https://images.avto.net/*",
+    "https://avtonet-server.onrender.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.avto.net/*"],
+      "js": [
+        "content/constants.js",
+        "content/utils.js",
+        "content/ad-hash.js",
+        "content/image-process.js",
+        "content/image-cache.js",
+        "content/solve-captcha.js",
+        "content/login.js",
+        "content/fetch-active-ads.js",
+        "content/get-car-data.js",
+        "content/delete-old-ad.js",
+        "content/select-brand-and-model.js",
+        "content/set-fuel-type.js",
+        "content/set-registration-values.js",
+        "content/fill-form-fields.js",
+        "content/get-new-ad-url.js",
+        "content/create-new-ad.js",
+        "content/upload-images.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pages/*", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
