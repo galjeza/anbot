@@ -1,9 +1,8 @@
 import { wait } from '../utils/utils.js';
 
-export const loginToAvtonet = async (browser, email, password) => {
+export const loginToAvtonet = async (page, email, password) => {
   const DEFAULT_TIMEOUT_MS = 60 * 1000;
   const TYPE_DELAY_MS = 50;
-  const [page] = await browser.pages();
   const COOKIE_ACCEPT_SELECTOR = '#CybotCookiebotDialogBodyLevelButtonAccept';
   const LOGIN_URL = 'https://www.avto.net/_2016mojavtonet/';
   const LOGIN_SUCCESS_URL = 'https://www.avto.net/_2016mojavtonet/welcome.asp';

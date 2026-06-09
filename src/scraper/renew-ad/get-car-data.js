@@ -10,14 +10,13 @@ import { solveCaptcha } from './solve-captcha.js';
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const getCarData = async (
-  browser,
+  page,
   adId,
   hdImages,
   adType = 'car',
   testMode = false,
 ) => {
   const userDataPath = app.getPath('userData');
-  const [page] = await browser.pages();
   page.setDefaultTimeout(SLOW_TIMEOUT_MS);
   page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
   const editUrl = `${AVTONETEDITPREFIX}${adId}`;

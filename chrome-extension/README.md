@@ -1,8 +1,8 @@
 # Avtonet Bot — Chrome Extension
 
 A Manifest V3 rewrite of the Electron app in `../src/`. Same behavior, but the
-work happens inside a real Chrome tab the user can see — no Steel.dev cloud
-browser and no Puppeteer.
+work happens inside the avto.net tab the user already has open — no Steel.dev
+cloud browser, no Puppeteer, no separate dashboard tab.
 
 ## Install (unpacked)
 
@@ -13,27 +13,25 @@ browser and no Puppeteer.
 
 ## Use
 
-1. Click the toolbar icon → **Odpri nadzorno ploščo**. A new tab opens with
-   the same UI flow as the Electron app: Menu → Konfiguracija → Adlist →
-   Obnavljanje.
-2. **Sign in to avto.net in a regular browser tab first.** The extension
-   never types credentials — it drives the session you already have.
-3. First time only: open **Konfiguracija** and save your avto.net email. It's
-   used to look up your `brokerId` + subscription state from
+1. Open `https://www.avto.net/_2016mojavtonet/` in a regular tab and **sign
+   in**. The extension never types credentials.
+2. With that avto.net tab active, click the extension's toolbar icon. The
+   popup is the whole UI — there is no separate dashboard tab.
+3. First time only: open **Konfiguracija** in the popup and save your avto.net
+   email. It's used to look up your `brokerId` + subscription state from
    `avtonet-server.onrender.com`.
-4. Pick **Obnovi avtomobile / dostavna / platišča**. The extension verifies
-   the session is alive (redirect to `welcome.asp`), then drives your
-   `avto.net` tab through the list/edit/delete/recreate/upload flow with the
-   same pauses between ads.
-5. The avto.net tab is yours to watch. Closing it cancels the active step.
-   Use the **Prekliči** button to stop cleanly between steps.
+4. Click **Obnovi avtomobile / dostavna / platišča**. The extension drives the
+   avto.net tab through list/edit/delete/recreate/upload with the same pauses
+   between ads as the Electron app.
+5. You can close the popup — the renewal keeps running. Reopen the popup any
+   time to see live progress, or to cancel via **Prekliči**.
 
 ## Architecture (vs the Electron app)
 
 | Electron piece                              | Chrome-extension equivalent                                           |
 | ------------------------------------------- | --------------------------------------------------------------------- |
 | `src/main/main.ts` IPC + orchestration      | `background/service-worker.js`                                        |
-| `src/scraper/utils/browser-utils.js` (Steel)| `chrome.tabs` + `chrome.scripting` — the user's own browser tab       |
+| `src/scraper/utils/browser-utils.js` (Steel)| `chrome.tabs` + `chrome.scripting` — the user's own avto.net tab      |
 | Puppeteer `page.goto` / `page.waitFor*`     | `chrome.tabs.update` + `chrome.tabs.onUpdated` + content-script ping  |
 | Puppeteer DOM access                        | Direct DOM in `content/*.js` (one isolated world per avto.net tab)    |
 | `electron-store`                            | `chrome.storage.local` (key: `userData`)                              |
@@ -41,7 +39,7 @@ browser and no Puppeteer.
 | Jimp blur/desaturate                        | `OffscreenCanvas` + `ctx.filter` in `content/image-process.js`        |
 | Steel `sessions.files.upload` → puppeteer   | `DataTransfer` → `<input type=file>.files` + `change` event           |
 | Math captcha solver (`solve-captcha.js`)    | Same logic, vanilla DOM (`content/solve-captcha.js`)                  |
-| React Router pages (`Menu`, `UpdateUser`, …)| Plain HTML pages under `pages/*.html` with vanilla JS                 |
+| React Router pages                          | Single popup with four views (`popup/popup.js`)                       |
 | `electron-updater`                          | _Not ported._ Update via the Chrome Web Store or `Reload` button      |
 
 ## Files
@@ -49,15 +47,15 @@ browser and no Puppeteer.
 ```
 chrome-extension/
 ├── manifest.json
-├── background/service-worker.js   # orchestrator
+├── background/service-worker.js   # orchestrator + job state
 ├── content/                       # injected into www.avto.net
-│   ├── constants.js               # URLs + captcha selectors
+│   ├── constants.js
 │   ├── utils.js                   # wait / waitForSelector / typing helpers
 │   ├── ad-hash.js                 # 4-version cache-key generator
 │   ├── image-process.js           # canvas-based Jimp replacement
 │   ├── image-cache.js             # IndexedDB image cache
 │   ├── solve-captcha.js
-│   ├── login.js
+│   ├── login.js                   # session verification only
 │   ├── fetch-active-ads.js
 │   ├── get-car-data.js
 │   ├── delete-old-ad.js
@@ -69,15 +67,10 @@ chrome-extension/
 │   ├── create-new-ad.js
 │   ├── upload-images.js
 │   └── content.js                 # RPC dispatcher
-├── pages/                         # dashboard UI
-│   ├── shared.css / shared.js
-│   ├── menu.html / menu.js
-│   ├── settings.html / settings.js
-│   ├── adlist.html / adlist.js
-│   └── obnavljanje.html / obnavljanje.js
-├── popup/
+├── popup/                         # the entire UI
 │   ├── popup.html
-│   └── popup.js
+│   ├── popup.css
+│   └── popup.js                   # menu / settings / adlist / obnavljanje
 └── icons/
 ```
 
@@ -88,20 +81,23 @@ chrome-extension/
   password entirely and relies on the user's existing avto.net session — if
   the session expires you'll see a clear "Niste prijavljeni" error and can
   sign in manually.
+- **Controls the active tab.** The extension does not create a tab — it uses
+  whichever avto.net tab is currently active in the focused window. If you
+  haven't opened avto.net yet, it shows an error and tells you to open it.
+  Once a job starts, it sticks to that tab for the duration of the job.
+- **Popup-only UI.** All four screens (menu, settings, ad list, progress)
+  live inside the toolbar popup. Closing the popup does **not** cancel a job;
+  the background service worker keeps driving the avto.net tab. Reopen the
+  popup any time to see live progress.
 - **No Steel proxy / Turnstile solver.** The user's real browser does both
-  jobs — no rotating-IP risk, but it also means avto.net's anti-bot heuristics
-  see real activity.
+  jobs — no rotating-IP risk, but avto.net's anti-bot heuristics see real
+  activity.
 - **Image cache lives on avto.net's origin.** IndexedDB in a content script
-  shares an origin with the host page. Avto.net code can see (but should not
-  care about) the cached blobs. This trade keeps fetches CORS-free.
-- **Service-worker shutdown.** MV3 may stop the background while a long pause
-  is running. Keep the dashboard tab open during a job — its `runtime.connect`
-  port keeps the worker alive.
+  shares an origin with the host page. Cross-origin fetches to
+  `images.avto.net` go through the service worker which has host-permission
+  bypass.
 - **Single concurrent job.** `start-renew` rejects if a job is already
   running. Cancel with **Prekliči** before starting another.
-- **Auto-update unported.** The Electron `electron-updater` flow is not
-  applicable; if you want gated UX based on a deployed version, add a check
-  against `avtonet-server.onrender.com`.
 
 ## Disable the Electron build
 

@@ -2,43 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
 
-import { steelClient } from '../utils/browser-utils.js';
 import { getAdImagesDirectory, wait, randomWait } from '../utils/utils.js';
 
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
-export const uploadImages = async (
-  browser,
-  carData,
-  adType = 'car',
-  sessionId,
-) => {
+export const uploadImages = async (page, carData, adType = 'car') => {
   const userDataPath = app.getPath('userData');
   const maxRetries = 3;
   let retryCount = 0;
-  const uploadedFilesByLocalPath = new Map();
-
-  if (!sessionId) {
-    throw new Error('Steel session ID is required for image uploads');
-  }
-
-  const resolveUploadPage = async () => {
-    const pages = await browser.pages();
-    if (pages.length === 0) {
-      throw new Error('No browser pages available for image upload');
-    }
-
-    const avtoNetPages = pages.filter((page) => {
-      try {
-        const pageUrl = page.url();
-        return pageUrl.includes('avto.net') && pageUrl !== 'about:blank';
-      } catch {
-        return false;
-      }
-    });
-
-    return avtoNetPages[0] || pages[0];
-  };
 
   const getFileInput = async (page) => {
     for (let inputAttempt = 1; inputAttempt <= 5; inputAttempt += 1) {
@@ -64,7 +35,7 @@ export const uploadImages = async (
   while (retryCount < maxRetries) {
     try {
       console.log('[uploadImages] Attempt', { attempt: retryCount + 1 });
-      const imagesUploadPage = await resolveUploadPage();
+      const imagesUploadPage = page;
 
       imagesUploadPage.setDefaultTimeout(SLOW_TIMEOUT_MS);
       imagesUploadPage.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
@@ -158,35 +129,11 @@ export const uploadImages = async (
           continue;
         }
 
-        let sessionImagePath = uploadedFilesByLocalPath.get(imagePath);
-        if (!sessionImagePath) {
-          const uploadedSessionFile = await steelClient.sessions.files.upload(
-            sessionId,
-            {
-              file: fs.createReadStream(imagePath),
-            },
-          );
-
-          if (!uploadedSessionFile?.path) {
-            throw new Error(
-              `Failed to upload image to Steel session: ${imageFile}`,
-            );
-          }
-
-          sessionImagePath = uploadedSessionFile.path;
-          uploadedFilesByLocalPath.set(imagePath, sessionImagePath);
-
-          console.log('[uploadImages] Uploaded file to Steel session', {
-            imageFile,
-            sessionImagePath,
-          });
-        }
-
         console.log('[uploadImages] Uploading file', {
           imageFile,
-          sessionImagePath,
+          imagePath,
         });
-        await fileInput.uploadFile(sessionImagePath);
+        await fileInput.uploadFile(imagePath);
         await wait(4);
 
         // Dump info about every .ButtonAddPhoto so we can see if the click target drifts.

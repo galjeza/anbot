@@ -62,7 +62,13 @@ const broadcastProgress = () => {
 };
 
 const updateJob = (patch) => {
+  const stepChanged = patch.step && patch.step !== jobState.step;
   Object.assign(jobState, patch);
+  if (stepChanged) {
+    console.log(
+      `[job] step → ${jobState.step} (ad ${jobState.currentAdId || '-'}, ${jobState.current}/${jobState.total})`,
+    );
+  }
   broadcastProgress();
 };
 
@@ -89,10 +95,11 @@ const checkCancelled = () => {
   }
 };
 
-// Find an existing avto.net tab in any window; fall back to creating a new
-// one. The window the dashboard lives in is preferred so the user watches the
-// action happen alongside the control UI.
-const ensureAvtoTab = async (preferWindowId) => {
+// Resolve the avto.net tab to operate on. While a job is running we stick to
+// the tab we started on. Otherwise we use the active tab in the current
+// window if it's on avto.net. We never auto-create a tab — the popup-only
+// flow requires the user to open avto.net themselves.
+const resolveAvtoTab = async () => {
   if (jobState.tabId) {
     try {
       const tab = await chrome.tabs.get(jobState.tabId);
@@ -101,18 +108,17 @@ const ensureAvtoTab = async (preferWindowId) => {
       // tab gone, fall through
     }
   }
-  const tabs = await chrome.tabs.query({ url: 'https://www.avto.net/*' });
-  if (tabs.length > 0) {
-    jobState.tabId = tabs[0].id;
-    return tabs[0];
-  }
-  const tab = await chrome.tabs.create({
-    url: LOGIN_URL,
-    active: false,
-    windowId: preferWindowId,
+  const [active] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
   });
-  jobState.tabId = tab.id;
-  return tab;
+  if (!active || !active.url || !active.url.startsWith('https://www.avto.net/')) {
+    throw new Error(
+      'Trenutni zavihek ni odprt na avto.net. Odprite https://www.avto.net/_2016mojavtonet/, prijavite se in poskusite znova.',
+    );
+  }
+  jobState.tabId = active.id;
+  return active;
 };
 
 // Wait until the content script in the tab answers a ping (i.e. the DOM is
@@ -160,58 +166,248 @@ const waitForTabReady = async (
   );
 };
 
-const sendToTab = (tabId, command, payload) =>
-  new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(tabId, { command, payload }, (response) => {
-      if (chrome.runtime.lastError) {
-        return reject(new Error(chrome.runtime.lastError.message));
-      }
-      if (!response) {
-        return reject(new Error('Empty response from content script'));
-      }
-      if (response.error) {
-        return reject(new Error(response.error));
-      }
-      resolve(response.data);
-    });
-  });
-
-// Used when the command we send is expected to trigger navigation. The
-// content script may not get to call sendResponse before the page tears down,
-// which surfaces as "message channel closed". That's expected — the response
-// would just be undefined data anyway. After the call, the caller should
-// waitForTabReady with previousUrl/expectUrl to confirm the navigation
-// actually happened.
-const sendToTabFireAndForget = async (tabId, command, payload) => {
+const getCurrentTabUrl = async (tabId) => {
   try {
-    await sendToTab(tabId, command, payload);
-  } catch (e) {
-    if (
-      /message channel closed|Could not establish connection|Receiving end does not exist/i.test(
-        e.message || '',
-      )
-    ) {
-      return;
-    }
-    throw e;
+    const tab = await chrome.tabs.get(tabId);
+    return tab.url || '';
+  } catch {
+    return '';
   }
 };
 
-const getCurrentTabUrl = async (tabId) => {
-  const tab = await chrome.tabs.get(tabId);
-  return tab.url || '';
+// Snapshot context that's useful when a message-channel failure is the cause:
+// which command was sent, what step the job thought it was on, where the tab
+// was, and how long ago we asked.
+const buildSendContext = (command, urlAtCall, t0) => {
+  const dt = Date.now() - t0;
+  const step = jobState.step || '-';
+  const ad = jobState.currentAdId ? ` ad=${jobState.currentAdId}` : '';
+  return `cmd=${command} step=${step}${ad} url=${urlAtCall || '?'} took=${dt}ms`;
 };
 
-const navigateAndWait = async (tabId, url) => {
+const sendToTab = async (tabId, command, payload) => {
+  const t0 = Date.now();
+  // ping is called every 300ms by waitForTabReady — keep it silent or the
+  // console floods. Real commands are logged at start AND end.
+  const verbose = command !== 'ping';
+  const urlAtCall = await getCurrentTabUrl(tabId);
+  if (verbose) {
+    console.log(`[sendToTab] → ${command} (step=${jobState.step}, url=${urlAtCall})`);
+  }
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, { command, payload }, (response) => {
+      const ctx = buildSendContext(command, urlAtCall, t0);
+      if (chrome.runtime.lastError) {
+        const msg = chrome.runtime.lastError.message;
+        if (verbose) console.warn(`[sendToTab] ✗ ${command}: ${msg} | ${ctx}`);
+        return reject(new Error(`${msg} [${ctx}]`));
+      }
+      if (!response) {
+        if (verbose) console.warn(`[sendToTab] ✗ ${command}: empty response | ${ctx}`);
+        return reject(new Error(`Empty response from content script [${ctx}]`));
+      }
+      if (response.error) {
+        if (verbose) console.warn(`[sendToTab] ✗ ${command}: ${response.error} | ${ctx}`);
+        return reject(new Error(`${response.error} [${ctx}]`));
+      }
+      if (verbose) console.log(`[sendToTab] ✓ ${command} (${Date.now() - t0}ms)`);
+      resolve(response.data);
+    });
+  });
+};
+
+// Background-driven reload that waits safely for the new content script.
+// Install the onUpdated listener before reloading, wait for 'loading' to
+// confirm the old script is dead, poll ping safely, then wait for the page
+// to stop generating loading events before declaring done.
+const reloadAndAwaitContentScript = async (
+  tabId,
+  { timeoutMs = 60_000, stabilityMs = 1500, maxStabilityWaitMs = 20_000 } = {},
+) => {
+  const beforeUrl = await getCurrentTabUrl(tabId);
+  let lastLoadingAt = null;
+  const navListener = (updatedTabId, info) => {
+    if (updatedTabId === tabId && info.status === 'loading') {
+      lastLoadingAt = Date.now();
+    }
+  };
+  chrome.tabs.onUpdated.addListener(navListener);
+  try {
+    await chrome.tabs.reload(tabId);
+    const navDeadline = Date.now() + 10_000;
+    while (!lastLoadingAt && Date.now() < navDeadline) {
+      await sleep(100);
+    }
+    if (!lastLoadingAt) {
+      throw new Error('Reload did not start within 10s');
+    }
+    await waitForTabReady(tabId, { expectUrl: beforeUrl, timeoutMs });
+    const stabilityDeadline = Date.now() + maxStabilityWaitMs;
+    while (Date.now() < stabilityDeadline) {
+      if (Date.now() - lastLoadingAt >= stabilityMs) break;
+      await sleep(150);
+    }
+  } finally {
+    chrome.tabs.onUpdated.removeListener(navListener);
+  }
+};
+
+// expectRedirect: when the URL we navigate to is known to 302 away (e.g.
+// ad_delete.asp → details.asp?showalert=3), don't require the destination
+// to start with our requested URL. Instead just wait until the tab is on
+// any URL other than the one it was on before the navigate.
+const navigateAndWait = async (tabId, url, { expectRedirect = false } = {}) => {
+  const beforeUrl = expectRedirect ? await getCurrentTabUrl(tabId) : null;
   await chrome.tabs.update(tabId, { url });
-  await waitForTabReady(tabId, { expectUrl: url });
+  await waitForTabReady(
+    tabId,
+    expectRedirect ? { previousUrl: beforeUrl } : { expectUrl: url },
+  );
+};
+
+// Click a selector in the tab via chrome.scripting.executeScript. Runs in the
+// page's isolated world; bypasses runtime messaging so there is no
+// sendResponse race when the click triggers navigation. Returns true if the
+// element was clicked, false if it was not found.
+const clickInTab = async (tabId, selector) => {
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+      el.click();
+      return true;
+    },
+    args: [selector],
+  });
+  if (!result || result.result === false) {
+    throw new Error(`Click target ${selector} not found`);
+  }
+};
+
+// Install the onUpdated listener BEFORE clicking, so we never miss the
+// 'loading' event. Then wait for the new content script to come up AND for
+// the page to stop firing more navigation events (server redirects + JS
+// reloads on first paint are common on avto.net).
+const clickAndAwaitNavigation = async (
+  tabId,
+  selector,
+  { timeoutMs = 60_000, stabilityMs = 1500, maxStabilityWaitMs = 20_000 } = {},
+) => {
+  const beforeUrl = await getCurrentTabUrl(tabId);
+  let lastLoadingAt = null;
+  const navListener = (updatedTabId, info) => {
+    if (updatedTabId === tabId && info.status === 'loading') {
+      lastLoadingAt = Date.now();
+    }
+  };
+  chrome.tabs.onUpdated.addListener(navListener);
+  try {
+    await clickInTab(tabId, selector);
+    const navDeadline = Date.now() + 10_000;
+    while (!lastLoadingAt && Date.now() < navDeadline) {
+      await sleep(100);
+    }
+    if (!lastLoadingAt) {
+      throw new Error(
+        `Navigation did not start within 10s after clicking ${selector}`,
+      );
+    }
+    await waitForTabReady(tabId, { previousUrl: beforeUrl, timeoutMs });
+    // Now wait for navigation activity to fully quiesce. Keep extending the
+    // window every time a new loading event fires.
+    const stabilityDeadline = Date.now() + maxStabilityWaitMs;
+    while (Date.now() < stabilityDeadline) {
+      if (Date.now() - lastLoadingAt >= stabilityMs) break;
+      await sleep(150);
+    }
+    if (Date.now() - lastLoadingAt < stabilityMs) {
+      console.warn(
+        `[clickAndAwaitNavigation] tab still active after ${maxStabilityWaitMs}ms — proceeding anyway`,
+      );
+    }
+  } finally {
+    chrome.tabs.onUpdated.removeListener(navListener);
+  }
+};
+
+// Wait until the tab has been navigation-quiet for stabilityMs. Use after an
+// in-page action that might trigger an unobserved reload (e.g. clicking a
+// link that does location = …).
+const waitForTabStable = async (
+  tabId,
+  { stabilityMs = 1500, maxWaitMs = 20_000 } = {},
+) => {
+  let lastLoadingAt = Date.now();
+  const navListener = (updatedTabId, info) => {
+    if (updatedTabId === tabId && info.status === 'loading') {
+      lastLoadingAt = Date.now();
+    }
+  };
+  chrome.tabs.onUpdated.addListener(navListener);
+  try {
+    const deadline = Date.now() + maxWaitMs;
+    while (Date.now() < deadline) {
+      if (Date.now() - lastLoadingAt >= stabilityMs) {
+        // Confirm a fresh content script is actually responsive before we
+        // declare the tab stable.
+        try {
+          await sendToTab(tabId, 'ping');
+          return;
+        } catch {
+          lastLoadingAt = Date.now();
+        }
+      }
+      await sleep(150);
+    }
+    console.warn(
+      `[waitForTabStable] gave up after ${maxWaitMs}ms — last loading event ${Date.now() - lastLoadingAt}ms ago`,
+    );
+  } finally {
+    chrome.tabs.onUpdated.removeListener(navListener);
+  }
+};
+
+// Retry a content-script command if the message channel closes mid-call
+// (page reloaded itself, transient teardown). For scrape-style commands that
+// don't intentionally trigger navigation. Re-navigates to renavigateUrl
+// between attempts so the content script is back on the right page.
+const sendToTabWithRetry = async (
+  tabId,
+  command,
+  payload,
+  { retries = 2, renavigateUrl } = {},
+) => {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await sendToTab(tabId, command, payload);
+    } catch (e) {
+      lastErr = e;
+      const transient = /message channel closed|Could not establish connection|Receiving end does not exist/i.test(
+        e.message || '',
+      );
+      if (!transient || attempt === retries) throw e;
+      console.warn(
+        `[sendToTabWithRetry] ${command} failed (attempt ${attempt + 1}): ${e.message}`,
+      );
+      if (renavigateUrl) {
+        await navigateAndWait(tabId, renavigateUrl);
+      } else {
+        await sleep(1000);
+      }
+    }
+  }
+  throw lastErr;
 };
 
 // ----------------------------- Fetch active ads ----------------------------
 
-const fetchActiveAds = async (brokerId, adType, preferWindowId) => {
+const fetchActiveAds = async (brokerId, adType) => {
   const listUrl = `${AVTONET_URLS[adType]}${brokerId}`;
-  const tab = await ensureAvtoTab(preferWindowId);
+  const tab = await resolveAvtoTab();
   await verifyLoggedIn(tab.id);
   await navigateAndWait(tab.id, listUrl);
 
@@ -250,16 +446,25 @@ const renewSingleAd = async (
   // Edit form scrape
   updateJob({ step: 'scrape-edit-form' });
   checkCancelled();
-  await navigateAndWait(tabId, `${AVTONETEDITPREFIX}${adId}`);
-  const carData = await sendToTab(tabId, 'scrapeEditForm', { adId });
+  const editUrl = `${AVTONETEDITPREFIX}${adId}`;
+  await navigateAndWait(tabId, editUrl);
+  // Retry on transient channel-closed (page may reload subresources or
+  // briefly tear down the content script during heavy ad-page load).
+  const carData = await sendToTabWithRetry(
+    tabId,
+    'scrapeEditForm',
+    { adId },
+    { renavigateUrl: editUrl },
+  );
 
-  // Mutate price + year, solve captcha, submit
+  // Mutate price + year, solve captcha — content script just prepares the
+  // form; background clicks ADVIEW so the message channel never races the
+  // form-submit navigation.
   if (!testMode) {
     updateJob({ step: 'submit-edit' });
     checkCancelled();
-    const beforeUrl = await getCurrentTabUrl(tabId);
-    await sendToTabFireAndForget(tabId, 'mutateAndSubmitEdit', { carData });
-    await waitForTabReady(tabId, { previousUrl: beforeUrl });
+    await sendToTab(tabId, 'mutateEditForm', { carData });
+    await clickAndAwaitNavigation(tabId, 'button[name=ADVIEW]');
   }
 
   // Images
@@ -278,13 +483,17 @@ const renewSingleAd = async (
     adType,
   });
 
-  // Delete old (skip in test mode)
+  // Delete old (skip in test mode). ad_delete.asp 302s to
+  // details.asp?ID=…&showalert=3 once the server processes the delete, so
+  // we can't require the requested URL prefix — expectRedirect waits for
+  // any new URL instead.
   if (!testMode) {
     updateJob({ step: 'delete-old' });
     checkCancelled();
     await navigateAndWait(
       tabId,
       `https://www.avto.net/_2016mojavtonet/ad_delete.asp?id=${encodeURIComponent(adId)}`,
+      { expectRedirect: true },
     );
     await sendToTab(tabId, 'confirmDelete');
   } else {
@@ -295,51 +504,94 @@ const renewSingleAd = async (
   updateJob({ step: 'new-ad-step1' });
   checkCancelled();
   await navigateAndWait(tabId, NEW_AD_URL[adType]);
-  const step1Result = await sendToTab(tabId, 'createNewAdStep1', {
-    carData,
-    adType,
-  });
 
-  if (!step1Result.skipped) {
-    // potrdi caused navigation
-    await waitForTabReady(tabId, { previousUrl: NEW_AD_URL[adType] });
+  if (adType !== 'platisca') {
+    // createNewAdStep1 fills brand/model/oblika/etc; background clicks
+    // potrdi (which navigates) so the message channel doesn't race.
+    await sendToTab(tabId, 'createNewAdStep1', { carData, adType });
+    await clickAndAwaitNavigation(tabId, 'button[name="potrdi"]');
     if (adType === 'car') {
       updateJob({ step: 'click-supurl' });
-      // .supurl is an in-page click (expands a section) — no navigation.
+      // .supurl is an in-page click. On avto.net it sometimes re-triggers a
+      // page reload — wait for the tab to stabilize before the next command
+      // so we don't race a navigation.
       await sendToTab(tabId, 'clickSupurl');
+      await waitForTabStable(tabId);
     }
   }
 
   // Wait for the cena field to appear, then reload the tab (mirroring the
-  // original puppeteer flow that reloaded once to settle state). Doing the
-  // reload from the background gives us a clean navigation boundary.
+  // original puppeteer flow that reloaded once to settle state). Retry on
+  // channel-close in case the step2 page is still mid-init when we send.
   updateJob({ step: 'fill-form-first-pass' });
   checkCancelled();
-  await sendToTab(tabId, 'waitForCenaInput');
-  await chrome.tabs.reload(tabId);
-  await waitForTabReady(tabId);
+  await sendToTabWithRetry(tabId, 'waitForCenaInput', {}, { retries: 3 });
+  await reloadAndAwaitContentScript(tabId);
 
   updateJob({ step: 'fill-form-and-submit' });
   checkCancelled();
-  const beforeFinalSubmit = await getCurrentTabUrl(tabId);
-  await sendToTabFireAndForget(tabId, 'fillFormAfterReload', { carData, adType });
-  // EDITAD click navigates to image upload page.
-  await waitForTabReady(tabId, { previousUrl: beforeFinalSubmit });
+  // fillFormAfterReload fills fields + solves captcha; background clicks
+  // EDITAD (which navigates to image upload) so the content script never
+  // returns from a navigation-triggering click.
+  await sendToTab(tabId, 'fillFormAfterReload', { carData, adType });
+  await clickAndAwaitNavigation(tabId, 'button[name="EDITAD"]');
 
-  // Upload images
+  // Upload images. Each successful upload triggers a server-side navigation
+  // (ad_photos_upload.asp → ad_photos_edit_1by1.asp → …), so we drive the
+  // loop from the background — one image per command — and let
+  // waitForTabStable absorb whatever the page does between iterations.
+  // .ButtonAddPhoto (which advances to the next slot) is clicked by the
+  // background via executeScript, NOT inside the handler, so the
+  // navigation it causes never tears down a live response channel.
   updateJob({ step: 'upload-images' });
   checkCancelled();
-  await sendToTab(tabId, 'uploadCachedImages', {
+  await waitForTabStable(tabId);
+  await sendToTabWithRetry(tabId, 'prepareUploadPage', {}, { retries: 2 });
+
+  const { count: cachedCount } = await sendToTab(tabId, 'getCachedImageCount', {
     cacheKey,
-    expectedCount: imageUrls.length,
   });
+  const totalToUpload = Math.min(cachedCount, imageUrls.length);
+  if (totalToUpload === 0) {
+    throw new Error('No cached images to upload');
+  }
+  console.log(`[upload-images] uploading ${totalToUpload} images`);
+
+  for (let i = 0; i < totalToUpload; i += 1) {
+    checkCancelled();
+    updateJob({ step: `upload-images (${i + 1}/${totalToUpload})` });
+    await sendToTabWithRetry(
+      tabId,
+      'uploadOneImage',
+      { cacheKey, index: i },
+      { retries: 1 },
+    );
+    // The page's onChange XHR may navigate after the upload. Wait for the
+    // tab to be quiet before we advance to the next slot.
+    await waitForTabStable(tabId);
+    if (i < totalToUpload - 1) {
+      // Advance to the next file slot. We tolerate failure here — if the
+      // button isn't on the page (different upload-flow variant), the next
+      // uploadOneImage's findFileInput will click it via its own
+      // maxAttempts loop.
+      try {
+        await clickInTab(tabId, '.ButtonAddPhoto');
+        await waitForTabStable(tabId);
+      } catch (e) {
+        console.warn(
+          `[upload-images] ButtonAddPhoto not found between images ${i} and ${i + 1}: ${e.message}`,
+        );
+      }
+    }
+  }
+  updateJob({ step: 'upload-images' });
 };
 
-const runRenewalJob = async ({ ads, pause, adType, testMode, windowId }) => {
+const runRenewalJob = async ({ ads, pause, adType, testMode }) => {
   const { userData } = await chrome.storage.local.get('userData');
   if (!userData) throw new Error('No userData saved. Open settings first.');
 
-  const tab = await ensureAvtoTab(windowId);
+  const tab = await resolveAvtoTab();
   updateJob({
     status: 'running',
     total: ads.length,
@@ -395,10 +647,14 @@ const runRenewalJob = async ({ ads, pause, adType, testMode, windowId }) => {
         step: 'cancelled',
       });
     } else {
-      console.error('[renewal-job] Failed', e);
+      const ctx = `step=${jobState.step} ad=${jobState.currentAdId || '-'} (${jobState.current}/${jobState.total})`;
+      console.error(`[renewal-job] Failed at ${ctx}`, e);
+      const baseMsg = e.message || String(e);
+      // Don't double-tag if sendToTab already attached [cmd=… step=…].
+      const tagged = baseMsg.includes('[cmd=') ? baseMsg : `${baseMsg} [${ctx}]`;
       updateJob({
         status: 'error',
-        error: e.message || String(e),
+        error: tagged,
         finishedAt: Date.now(),
       });
     }
@@ -408,18 +664,6 @@ const runRenewalJob = async ({ ads, pause, adType, testMode, windowId }) => {
 // --------------------------- Top-level RPC surface -------------------------
 
 const rpc = {
-  'open-dashboard': async () => {
-    const url = chrome.runtime.getURL('pages/menu.html');
-    const existing = await chrome.tabs.query({ url });
-    if (existing.length > 0) {
-      await chrome.tabs.update(existing[0].id, { active: true });
-      await chrome.windows.update(existing[0].windowId, { focused: true });
-      return { tabId: existing[0].id };
-    }
-    const tab = await chrome.tabs.create({ url });
-    return { tabId: tab.id };
-  },
-
   'get-user-data': async () => {
     const { userData } = await chrome.storage.local.get('userData');
     return userData || null;
@@ -459,18 +703,20 @@ const rpc = {
     return { ok: true, base64: btoa(binary), mimeType };
   },
 
-  'get-ads': async ({ adType, windowId }) => {
+  'get-ads': async ({ adType }) => {
     const { userData } = await chrome.storage.local.get('userData');
-    if (!userData?.brokerId) throw new Error('Missing brokerId — refresh dashboard first');
-    return fetchActiveAds(userData.brokerId, adType, windowId);
+    if (!userData?.brokerId) {
+      throw new Error('Missing brokerId — open settings and refresh first');
+    }
+    return fetchActiveAds(userData.brokerId, adType);
   },
 
-  'start-renew': async ({ ads, pause, adType, testMode, windowId }) => {
+  'start-renew': async ({ ads, pause, adType, testMode }) => {
     if (jobState.status === 'running') {
       throw new Error('A renewal job is already running');
     }
     // Fire and forget — progress streams via runtime.connect.
-    runRenewalJob({ ads, pause, adType, testMode, windowId });
+    runRenewalJob({ ads, pause, adType, testMode });
     return { started: true };
   },
 
@@ -501,10 +747,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
   })();
   return true;
-});
-
-chrome.action.onClicked?.addListener(async () => {
-  await rpc['open-dashboard']();
 });
 
 console.log('[AnBot SW] Loaded');

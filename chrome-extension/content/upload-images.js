@@ -40,78 +40,58 @@
     if (!found) throw new Error('Not on the image upload page');
   };
 
-  const uploadImages = async ({ cacheKey, expectedCount }) => {
-    console.log('[uploadImages] Start', { cacheKey, expectedCount });
-    const maxRetries = 3;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
-      try {
-        await ensureOnUploadPage();
-        await randomWait(2, 3);
-
-        const infoIcon = document.querySelector('.fa.fa-info-circle.fa-lg');
-        if (infoIcon) {
-          try {
-            infoIcon.click();
-          } catch {
-            // ignore
-          }
-          await wait(2);
-        }
-
-        const count = await imageCache.list(cacheKey);
-        if (count === 0) {
-          throw new Error(
-            `No images cached under ${cacheKey} — refusing to publish no-photo ad`,
-          );
-        }
-
-        for (let index = 0; index < count; index += 1) {
-          await wait(3);
-
-          const fileInput = await findFileInput();
-          if (!fileInput) throw new Error('File input not found');
-
-          const blob = await imageCache.getImage(cacheKey, index);
-          if (!blob) {
-            console.log('[uploadImages] Missing blob, skipping', { index });
-            continue;
-          }
-
-          const file = new File([blob], `${index}.jpg`, { type: 'image/jpeg' });
-          attachFileToInput(fileInput, file);
-          console.log('[uploadImages] Uploaded', { index });
-
-          await wait(4);
-
-          const buttons = document.querySelectorAll('.ButtonAddPhoto');
-          if (buttons.length > 0) {
-            try {
-              buttons[0].click();
-            } catch (e) {
-              console.log('[uploadImages] click error', e.message);
-            }
-            await wait(4);
-          }
-        }
-
-        console.log('[uploadImages] Upload complete');
-        return { uploaded: count };
-      } catch (e) {
-        console.log('[uploadImages] attempt failed', {
-          attempt,
-          error: e.message,
-        });
-        if (attempt === maxRetries) {
-          throw new Error(
-            `Failed to upload after ${maxRetries} attempts: ${e.message}`,
-          );
-        }
-        await wait(5);
-      }
-    }
-    return { uploaded: 0 };
+  // Returns the count of images cached under this key. Used by the
+  // background to drive the per-image loop.
+  const getCachedImageCount = async ({ cacheKey }) => {
+    const count = await imageCache.list(cacheKey);
+    return { count };
   };
 
-  ns.uploadImages = { uploadImages };
+  // One-time prep: ensure we're on the upload page, dismiss the info-icon
+  // overlay if present. Avto.net's photo-upload flow navigates after each
+  // image, so we keep this step short and idempotent.
+  const prepareUploadPage = async () => {
+    await ensureOnUploadPage();
+    await randomWait(2, 3);
+    const infoIcon = document.querySelector('.fa.fa-info-circle.fa-lg');
+    if (infoIcon) {
+      try {
+        infoIcon.click();
+      } catch {
+        // ignore
+      }
+      await wait(2);
+    }
+    return { ok: true };
+  };
+
+  // Upload ONE image. The background loops over indices, calling this once
+  // per image, then handles the ButtonAddPhoto click + stability wait in
+  // between. Splitting the loop keeps every navigation BETWEEN commands
+  // instead of mid-handler — so a page reload can no longer orphan the
+  // message channel.
+  const uploadOneImage = async ({ cacheKey, index }) => {
+    await ensureOnUploadPage();
+    await wait(2);
+
+    const fileInput = await findFileInput();
+    if (!fileInput) throw new Error('File input not found');
+
+    const blob = await imageCache.getImage(cacheKey, index);
+    if (!blob) {
+      return { uploaded: false, index, reason: 'missing blob' };
+    }
+
+    const file = new File([blob], `${index}.jpg`, { type: 'image/jpeg' });
+    attachFileToInput(fileInput, file);
+    console.log('[uploadOneImage] Attached file', { index });
+
+    // Give the page's onChange XHR a chance to start before we return. We
+    // don't await the navigation that may follow — the background will
+    // waitForTabStable once we're back.
+    await wait(4);
+    return { uploaded: true, index };
+  };
+
+  ns.uploadImages = { prepareUploadPage, uploadOneImage, getCachedImageCount };
 })();

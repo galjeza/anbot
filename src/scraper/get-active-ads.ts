@@ -1,4 +1,4 @@
-import { setupBrowser } from './utils/browser-utils.js';
+import { setupLocalBrowser } from './utils/local-browser-utils.js';
 import { AVTONET_URLS, AdTypeKey } from './utils/constants';
 
 export interface ActiveAd {
@@ -26,11 +26,9 @@ export async function fetchActiveAds(
   adType: AdTypeKey,
 ): Promise<ActiveAd[]> {
   const url = `${AVTONET_URLS[adType]}${brokerId}`;
-  const { browser, release } = await setupBrowser();
+  const { page, release } = await setupLocalBrowser();
 
   try {
-    const [page] = await browser.pages();
-
     await page.goto(url, {
       waitUntil: 'domcontentloaded', // much faster than default networkidle2
     });

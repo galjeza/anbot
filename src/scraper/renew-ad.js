@@ -1,4 +1,4 @@
-import { setupBrowser } from './utils/browser-utils.js';
+import { setupLocalBrowser } from './utils/local-browser-utils.js';
 import { loginToAvtonet } from './renew-ad/login-to-avtonet.js';
 import { getCarData } from './renew-ad/get-car-data.js';
 import { deleteOldAd } from './renew-ad/delete-old-ad.js';
@@ -21,32 +21,24 @@ export const renewAd = async (
     hdImages,
     testMode,
   });
-  const { browser, release, sessionId } = await setupBrowser();
-  let page;
+  const { page, release } = await setupLocalBrowser();
   try {
-    [page] = await browser.pages();
     page.setDefaultTimeout(SLOW_TIMEOUT_MS);
     page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
     console.log('[RenewAd] Browser ready');
-    await loginToAvtonet(browser, email, password);
+    await loginToAvtonet(page, email, password);
     console.log('* Logged in successfully');
-    const carData = await getCarData(
-      browser,
-      adId,
-      hdImages,
-      adType,
-      testMode,
-    );
+    const carData = await getCarData(page, adId, hdImages, adType, testMode);
     console.log('* Fetched car data successfully');
     if (testMode) {
       console.log('* Test mode: skipping deleteOldAd');
     } else {
-      await deleteOldAd(browser, adId);
+      await deleteOldAd(page, adId);
       console.log('* Deleted old ad successfully');
     }
-    await createNewAd(browser, carData, adType);
+    await createNewAd(page, carData, adType);
     console.log('* Created new ad successfully');
-    await uploadImages(browser, carData, adType, sessionId);
+    await uploadImages(page, carData, adType);
     console.log('* Uploaded images successfully');
     console.log('[RenewAd] Done', { adId });
   } finally {

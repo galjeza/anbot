@@ -29,14 +29,16 @@
       };
     });
 
-    const selects = Array.from(document.querySelectorAll('select')).map((sel) => {
-      const opt = sel.options[sel.selectedIndex];
-      return {
-        name: sel.name,
-        value: sel.value,
-        selectedText: opt ? (opt.textContent || '').trim() : null,
-      };
-    });
+    const selects = Array.from(document.querySelectorAll('select')).map(
+      (sel) => {
+        const opt = sel.options[sel.selectedIndex];
+        return {
+          name: sel.name,
+          value: sel.value,
+          selectedText: opt ? (opt.textContent || '').trim() : null,
+        };
+      },
+    );
 
     const inputs = Array.from(document.querySelectorAll('input')).map((i) => ({
       name: i.name,
@@ -47,11 +49,18 @@
     const htmlOpis = htmlOpisField ? htmlOpisField.value : null;
 
     const gorivoSelect = selects.find((s) => s.name === 'gorivo');
+    const oblikaSelect = selects.find((s) => s.name === 'oblika');
     const extraSelects = [...selects];
     if (gorivoSelect && gorivoSelect.selectedText) {
       extraSelects.push({
         name: 'gorivoText',
         value: gorivoSelect.selectedText,
+      });
+    }
+    if (oblikaSelect && oblikaSelect.selectedText) {
+      extraSelects.push({
+        name: 'oblikaText',
+        value: oblikaSelect.selectedText,
       });
     }
 
@@ -88,38 +97,35 @@
     );
   };
 
-  // Step 2: adjust price + registration year on the live edit page, solve
-  // the captcha, and submit. Caller (background) will wait for navigation
-  // afterwards.
-  const mutateAndSubmitEdit = async ({ carData }) => {
+  // Step 2: adjust price + registration year on the live edit page and solve
+  // the captcha. Does NOT click submit — the background clicks via
+  // chrome.scripting.executeScript so the message channel is never racing a
+  // navigation. Background then waits for the new page.
+  const mutateEditForm = async ({ carData }) => {
     const priceInput = document.querySelector('input[name="cena"]');
     if (priceInput) {
       const original = parseInt(priceInput.value, 10) || 1000;
-      const newPrice = Math.max(100, original + randomPriceOffset());
+      const newPrice = original - 1;
       console.log('[mutateEdit] Adjusting price', { original, newPrice });
       await clickAndType(priceInput, String(newPrice));
     }
 
-    const yearInput = document.querySelector('input[name="letoReg"]');
-    if (yearInput) {
-      const newYear = randomRegistrationYear();
-      console.log('[mutateEdit] Adjusting registration year', {
-        original: yearInput.value,
-        newYear,
-      });
-      await clickAndType(yearInput, newYear);
-    }
+    // const yearInput = document.querySelector('input[name="letoReg"]');
+    // if (yearInput) {
+    //   const newYear = randomRegistrationYear();
+    //   console.log('[mutateEdit] Adjusting registration year', {
+    //     original: yearInput.value,
+    //     newYear,
+    //   });
+    //   await clickAndType(yearInput, newYear);
+    // }
 
     await wait(3);
     await solveCaptcha();
 
     const submit = document.querySelector('button[name=ADVIEW]');
     if (!submit) throw new Error('Edit form submit button missing');
-    // Return synchronously after the click. Awaiting here would let the
-    // page navigate while we're still inside the handler, which orphans
-    // sendResponse and surfaces as "message channel closed". Background's
-    // waitForTabReady handles the post-navigation wait.
-    submit.click();
+    return { ready: true };
   };
 
   // Step 3: on the images page, pull the image URLs that point at
@@ -201,14 +207,16 @@
         let blob = base64ToBlob(result.base64, result.mimeType);
         if (!hdImages) {
           try {
-            blob = await imageProcess.reduceSharpnessDesaturateAndBlurEdges(
-              blob,
-            );
+            blob =
+              await imageProcess.reduceSharpnessDesaturateAndBlurEdges(blob);
           } catch (e) {
-            console.log('[cacheImages] Image processing failed, using original', {
-              url,
-              error: e.message,
-            });
+            console.log(
+              '[cacheImages] Image processing failed, using original',
+              {
+                url,
+                error: e.message,
+              },
+            );
           }
         }
         await imageCache.putImage(cacheKey, index, blob);
@@ -232,7 +240,7 @@
 
   ns.getCarData = {
     scrapeEditForm,
-    mutateAndSubmitEdit,
+    mutateEditForm,
     scrapeImageUrls,
     cacheImages,
   };

@@ -1,6 +1,12 @@
 (() => {
   const ns = (window.AnBot = window.AnBot || {});
-  const { wait, waitForSelector, selectOption, triggerClick } = ns.utils;
+  const {
+    wait,
+    waitForSelector,
+    selectOption,
+    waitForOptionAndSelect,
+    triggerClick,
+  } = ns.utils;
   const { selectBrand, resolveModelValue, selectModel } = ns.selectBrandAndModel;
   const { setRegistrationMonthYear } = ns.setRegistrationValues;
   const setFuelType = ns.setFuelType;
@@ -35,9 +41,36 @@
     await selectModel(carModel);
 
     const obl = carData.find((d) => d.name === 'oblika');
-    if (obl) {
-      const select = document.querySelector('select[name=oblika]');
-      if (select) selectOption(select, obl.value);
+    const oblText = carData.find((d) => d.name === 'oblikaText');
+    if (!obl && !oblText) {
+      throw new Error('oblika field missing from scraped carData');
+    }
+    const oblikaSelect = document.querySelector('select[name=oblika]');
+    if (!oblikaSelect) {
+      throw new Error('oblika select not found on new-ad page');
+    }
+    // Edit form uses numeric IDs (e.g. "15"), new-ad page uses text labels
+    // (e.g. "SUV"). Try the raw value first, then fall back to the text the
+    // edit form was displaying.
+    const candidates = [obl?.value, oblText?.value].filter(Boolean);
+    let picked = null;
+    for (const cand of candidates) {
+      if (await waitForOptionAndSelect(oblikaSelect, cand, { timeout: 5000 })) {
+        picked = cand;
+        break;
+      }
+    }
+    if (!picked) {
+      const available = Array.from(oblikaSelect.options).map((o) => ({
+        value: o.value,
+        text: (o.textContent || '').trim(),
+      }));
+      console.log('[createNewAdStep1] oblika options available', available);
+      throw new Error(
+        `oblika options ${JSON.stringify(candidates)} never appeared in select. Available: ${available
+          .map((a) => a.value)
+          .join(', ')}`,
+      );
     }
 
     await setRegistrationMonthYear(carData);
@@ -45,10 +78,9 @@
 
     const potrdi = document.querySelector('button[name="potrdi"]');
     if (!potrdi) throw new Error('Potrdi button missing');
-    // Return synchronously after the click. Awaiting here would let the
-    // page navigate while we're still inside the handler, which orphans
-    // sendResponse. Background waits for the new page via waitForTabReady.
-    triggerClick(potrdi);
+    // Click is performed by the background via chrome.scripting.executeScript
+    // after this returns. Keeps the response channel out of the navigation
+    // race entirely.
     return { skipped: false };
   };
 
@@ -94,7 +126,9 @@
 
     const submit = document.querySelector('button[name="EDITAD"]');
     if (!submit) throw new Error('EDITAD submit button missing');
-    triggerClick(submit);
+    // Background performs the click via chrome.scripting.executeScript after
+    // this handler returns; sendResponse fires cleanly first.
+    return { ready: true };
   };
 
   ns.createNewAd = {

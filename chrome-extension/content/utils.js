@@ -68,6 +68,29 @@
     selectEl.dispatchEvent(new Event('change', { bubbles: true }));
   };
 
+  // Poll until the <select> has an <option> with the given value, then
+  // select it. Useful when the options are populated by an async cascade
+  // (e.g. oblika after model). Returns true on success, false on timeout.
+  const waitForOptionAndSelect = async (
+    selectEl,
+    value,
+    { timeout = 15000 } = {},
+  ) => {
+    const start = Date.now();
+    const target = String(value);
+    while (Date.now() - start < timeout) {
+      const hasOption = Array.from(selectEl.options).some(
+        (o) => o.value === target,
+      );
+      if (hasOption) {
+        selectOption(selectEl, target);
+        return true;
+      }
+      await wait(0.2);
+    }
+    return false;
+  };
+
   const triggerClick = (el) => {
     el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
@@ -84,6 +107,7 @@
     clearInput,
     clickAndType,
     selectOption,
+    waitForOptionAndSelect,
     triggerClick,
   };
 })();

@@ -18,7 +18,7 @@ import { wait } from '../utils/utils.js';
 
 const SLOW_TIMEOUT_MS = 15 * 60 * 1000;
 
-export const createNewAd = async (browser, carData, adType) => {
+export const createNewAd = async (page, carData, adType) => {
   console.log('[createNewAd] Start', { adType, fields: carData.length });
   const modelRelatedFields = carData.filter(
     (data) =>
@@ -33,7 +33,6 @@ export const createNewAd = async (browser, carData, adType) => {
   const newAdUrl = getNewAdUrl(adType);
   console.log('[createNewAd] New ad URL', { newAdUrl });
 
-  const [page] = await browser.pages();
   page.setDefaultTimeout(SLOW_TIMEOUT_MS);
   page.setDefaultNavigationTimeout(SLOW_TIMEOUT_MS);
   await page.goto(newAdUrl);

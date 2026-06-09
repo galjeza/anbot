@@ -1,6 +1,4 @@
-export const deleteOldAd = async (browser, adId) => {
-  const [page] = await browser.pages();
-
+export const deleteOldAd = async (page, adId) => {
   console.log('[deleteOldAd] Navigating to delete URL', { adId });
 
   await page.goto(
