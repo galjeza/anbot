@@ -370,6 +370,17 @@ const waitForTabStable = async (
   }
 };
 
+const getErrorMessage = (e) => e?.message || String(e || '');
+
+const isMessageChannelClosedError = (e) =>
+  /message channel.*closed|back.?forward cache/i.test(getErrorMessage(e));
+
+const isTransientTabMessageError = (e) =>
+  isMessageChannelClosedError(e) ||
+  /Could not establish connection|Receiving end does not exist/i.test(
+    getErrorMessage(e),
+  );
+
 // Retry a content-script command if the message channel closes mid-call
 // (page reloaded itself, transient teardown). For scrape-style commands that
 // don't intentionally trigger navigation. Re-navigates to renavigateUrl
@@ -386,10 +397,7 @@ const sendToTabWithRetry = async (
       return await sendToTab(tabId, command, payload);
     } catch (e) {
       lastErr = e;
-      const transient = /message channel closed|Could not establish connection|Receiving end does not exist/i.test(
-        e.message || '',
-      );
-      if (!transient || attempt === retries) throw e;
+      if (!isTransientTabMessageError(e) || attempt === retries) throw e;
       console.warn(
         `[sendToTabWithRetry] ${command} failed (attempt ${attempt + 1}): ${e.message}`,
       );
@@ -560,15 +568,17 @@ const renewSingleAd = async (
   for (let i = 0; i < totalToUpload; i += 1) {
     checkCancelled();
     updateJob({ step: `upload-images (${i + 1}/${totalToUpload})` });
-    await sendToTabWithRetry(
-      tabId,
-      'uploadOneImage',
-      { cacheKey, index: i },
-      { retries: 1 },
-    );
-    // The page's onChange XHR may navigate after the upload. Wait for the
-    // tab to be quiet before we advance to the next slot.
-    await waitForTabStable(tabId);
+    try {
+      await sendToTab(tabId, 'uploadOneImage', { cacheKey, index: i });
+    } catch (e) {
+      if (!isMessageChannelClosedError(e)) throw e;
+      console.warn(
+        `[upload-images] uploadOneImage channel closed after image ${i + 1}; waiting for upload navigation`,
+      );
+    }
+    // The page's onChange XHR may navigate after the upload. Keep this wait in
+    // the background, not in the content-script response channel.
+    await waitForTabStable(tabId, { stabilityMs: 4500, maxWaitMs: 30_000 });
     if (i < totalToUpload - 1) {
       // Advance to the next file slot. We tolerate failure here — if the
       // button isn't on the page (different upload-flow variant), the next

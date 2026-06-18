@@ -4,7 +4,6 @@
     wait,
     waitForSelector,
     selectOption,
-    waitForOptionAndSelect,
     triggerClick,
   } = ns.utils;
   const { selectBrand, resolveModelValue, selectModel } = ns.selectBrandAndModel;
@@ -18,6 +17,59 @@
     fillTextareasFromData,
   } = ns.fillFormFields;
   const solveCaptcha = ns.solveCaptcha;
+
+  const normalizeOblika = (value) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+
+  const oblikaKeys = (value) => {
+    const normalized = normalizeOblika(value);
+    const tail = normalized.includes('-')
+      ? normalized.split('-').pop().trim()
+      : '';
+    return [
+      normalized,
+      normalized.replace(/[^a-z0-9]/g, ''),
+      tail,
+      tail.replace(/[^a-z0-9]/g, ''),
+    ].filter(Boolean);
+  };
+
+  const optionMatchesOblika = (option, candidateKeySet) => {
+    const optionKeys = [option.value, option.textContent].flatMap(oblikaKeys);
+    return optionKeys.some((key) => candidateKeySet.has(key));
+  };
+
+  const waitForOblikaAndSelect = async (
+    selectEl,
+    candidates,
+    { timeout = 5000 } = {},
+  ) => {
+    const candidateKeySet = new Set(candidates.flatMap(oblikaKeys));
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const options = Array.from(selectEl.options);
+      const selected = selectEl.options[selectEl.selectedIndex];
+      if (selected && optionMatchesOblika(selected, candidateKeySet)) {
+        return selected.value;
+      }
+
+      const match = options.find((option) =>
+        optionMatchesOblika(option, candidateKeySet),
+      );
+      if (match) {
+        selectOption(selectEl, match.value);
+        return match.value;
+      }
+
+      await wait(0.2);
+    }
+    return null;
+  };
 
   // Step 1: brand / model / body / registration / fuel + click potrdi. After
   // potrdi the form navigates to a different page; the background waits for
@@ -53,13 +105,9 @@
     // (e.g. "SUV"). Try the raw value first, then fall back to the text the
     // edit form was displaying.
     const candidates = [obl?.value, oblText?.value].filter(Boolean);
-    let picked = null;
-    for (const cand of candidates) {
-      if (await waitForOptionAndSelect(oblikaSelect, cand, { timeout: 5000 })) {
-        picked = cand;
-        break;
-      }
-    }
+    const picked = await waitForOblikaAndSelect(oblikaSelect, candidates, {
+      timeout: 5000,
+    });
     if (!picked) {
       const available = Array.from(oblikaSelect.options).map((o) => ({
         value: o.value,

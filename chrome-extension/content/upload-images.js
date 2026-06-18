@@ -21,13 +21,20 @@
   };
 
   // Programmatically populate a file <input> with a File built from our cached
-  // blob, then dispatch a 'change' event. DataTransfer is the only way to
-  // assign files to an input from JS in modern browsers.
+  // blob. DataTransfer is the only way to assign files to an input from JS in
+  // modern browsers.
   const attachFileToInput = (input, file) => {
     const dt = new DataTransfer();
     dt.items.add(file);
     input.files = dt.files;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  const dispatchFileChangeSoon = (input) => {
+    // The page may navigate immediately when this event fires. Schedule it so
+    // the content-script RPC can respond before Chrome tears down the port.
+    setTimeout(() => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, 50);
   };
 
   const ensureOnUploadPage = async () => {
@@ -84,12 +91,11 @@
 
     const file = new File([blob], `${index}.jpg`, { type: 'image/jpeg' });
     attachFileToInput(fileInput, file);
+    dispatchFileChangeSoon(fileInput);
     console.log('[uploadOneImage] Attached file', { index });
 
-    // Give the page's onChange XHR a chance to start before we return. We
-    // don't await the navigation that may follow — the background will
-    // waitForTabStable once we're back.
-    await wait(4);
+    // Do not wait here. Avto.net can reload the upload page from the change
+    // event; the background waits for that after this response is delivered.
     return { uploaded: true, index };
   };
 
